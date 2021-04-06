@@ -1,0 +1,16 @@
+{
+  "name": "broad-tsv-to-xml-converter",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node src/main.js",
+    "convert-tsv": "node src/converters/tsv-to-xml-converter.js"
+  },
+  "private": true,
+  "dependencies": {
+    "basic-ftp": "^4.6.6",
+    "chalk": "^4.1.0",
+    "xml2js": "^0.4.23",
+    "xmlbuilder": "^15.1.1"
+  },
+  "devDependencies": {}
+}

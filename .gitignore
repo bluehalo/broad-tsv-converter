@@ -1,0 +1,8 @@
+files/*
+!files/sample.tsv
+logs/
+reports/*
+!reports/sample-report.xml
+node_modules/*
+
+package-lock.json
