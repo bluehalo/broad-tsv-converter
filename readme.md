@@ -21,17 +21,18 @@ Before running the script, you will need to do the following steps:
 --------------------------------------------------
   How to Use
 --------------------------------------------------
-Parameter      |    |            | Description        
-help           | -h |            | print help table
-inputFilename  | -i | (required) | filename for the tsv file to be uploaded
-outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename
-uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder
-uploadComment  | -c | (optional) | description or comment about this submission
-releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01'
+| Parameter      |flag| Required    | Description |
+|----------------|----|------------|-------------|
+| help           | -h |            | print help table |
+| inputFilename  | -i | (required) | filename for the tsv file to be uploaded |
+| outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename |
+| uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder |
+| uploadComment  | -c | (optional) | description or comment about this submission |
+| releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01' | 
 --------------------------------------------------
 
-Example:
-node main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
+Example
+> node main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
 
 --------------------------------------------------
 
