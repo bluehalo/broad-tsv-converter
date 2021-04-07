@@ -5,11 +5,13 @@ const fs = require('fs');
 
 const builder = require('xmlbuilder');
 const parser = require('xml2js');
+const libxmljs = require('libxmljs');
 const ftp = require('basic-ftp');
-const { report } = require('process');
 
+// FTP variables
 let ftpClient, polling;
 
+// Options Variables
 const argv = process.argv.slice(2);
 let inputFilename, inputFileContent;
 let outputFilename, outputFilepath;
@@ -18,13 +20,29 @@ let selectedAction = 'AddData'; // AddFiles, ChangeStatus
 let comment, hold;
 let skipFtp = false;
 
+// XML variables
 let xml;
 
+// Data Variables
 let columnsRaw;
 let columnIndices = [];
 let columnIndexMap = {};
 let dataMap = {};
 
+// Other run time variables
+const log_file = fs.createWriteStream(path.resolve(__dirname, '../logs/debug.log'), {flags: 'w'});
+const log_stdout = process.stdout;
+debugLog = (d) => {
+    let date = new Date();
+    let dateString = `${date.toLocaleDateString()}-${date.toLocaleTimeString()}`;
+    log_file.write(`${dateString}\t|\t${d}\n`);
+};
+console.log = (d, log = true) => {
+    if (log) {
+        debugLog(d);
+    }
+    log_stdout.write(`${d}\n`);
+};
 const helptext = `
 --------------------------------------------------
   ${chalk.bold.cyanBright(`NCBI TSV UI-less Submitter`)}
@@ -72,8 +90,9 @@ const fns = {
     // User Input / Set Up
     //--------------------------------------------------
     extractParameters: () => {
+        debugLog(`extracting parameters: ${argv}`)
         if (argv.length === 0) {
-            console.log(helptext);
+            console.log(helptext, false);
             process.exit(1);
         }
 
@@ -122,7 +141,7 @@ const fns = {
                 case 'help':
                 case '--help':
                 case '-h':
-                    console.log(helptext);
+                    console.log(helptext, false);
                     process.exit(1);
                 case 'runtestmode':
                 case '--runtestmode':
@@ -162,7 +181,7 @@ const fns = {
     },
 
     getDescriptionXml: () => {
-        let ret = {
+        return {
             ...(comment && { 'Comment': comment }),
             ...(config.submitterConfig && {
                 Submitter: {
@@ -201,12 +220,10 @@ const fns = {
                 '@version': 'asymmetrik-tsv@1.0.0'
             }
         };
-
-        return ret;
     },
 
     getAddDataXml: (data) => {
-        let ret = data.map((d, rowNum) => {
+        return data.map((d, rowNum) => {
             // Log current progress, just in case this takes a long time
             let percentageCompleted = Math.floor(rowNum * 100.0 / data.length);
             process.stdout.clearLine();
@@ -216,28 +233,6 @@ const fns = {
             let values = d
                 .replace('\r', '')
                 .split('\t');
-            let attributes = [];
-            values.forEach((val, i) => {
-                // These indices are handled separately in the data object
-                let indicesToIgnore = [
-                    'sample_name', 'description',
-                    'organism', 'isolate',
-                    'bioproject_accession',
-                    'attribute_package',
-
-                    // These indices are not confirmed to match the tsv format of NCBI
-                    'taxonomy', 'label', 'strain', 'breed', 'cultivar',
-                    'title'
-                ];
-                let shouldIgnoreAttribute = !columnIndices[i] || indicesToIgnore.indexOf(columnIndices[i]) !== -1;
-
-                if (val && !shouldIgnoreAttribute) {
-                    attributes.push({
-                        '@attribute_name': columnIndices[i],
-                        '#text': val
-                    })    
-                }
-            });
 
             // Store data to map organism tsv row by name
             dataMap[fns.getRowValue(values, 'sample_name')] = d;
@@ -251,45 +246,7 @@ const fns = {
                     Data: {
                         '@content_type': 'XML',
                         XmlContent: {
-                            BioSample: {
-                                '@schema_version': '2.0',
-                                SampleId: {
-                                    SPUID: {
-                                        '@spuid_namespace': config.organizationConfig.spuid_namespace,
-                                        '#text': fns.getRowValue(values, 'sample_name')
-                                    }
-                                },
-                                Descriptor: {
-                                    ...(columnIndexMap['title'] && values[columnIndexMap['title']] && { 'Title': fns.getRowValue(values, 'title') }),
-                                    Description: fns.getRowValue(values, 'description'),
-                                    // TODO: Currently not supported
-                                    // ExternalLink: {
-                                        // '@label': 'link title'
-                                        // URL: '',
-                                        // ExternalId: typePrimaryId,
-                                        // EntrezQuery: ''
-                                    // }
-                                },
-                                Organism: {
-                                    ...(columnIndexMap['taxonomy'] && values[columnIndexMap['taxonomy']] && { '@taxonomy_id': values[columnIndexMap['taxonomy']] }),
-                                    ...(columnIndexMap['organism'] && values[columnIndexMap['organism']] && { 'OrganismName': values[columnIndexMap['organism']] }),
-                                    ...(columnIndexMap['label'] && values[columnIndexMap['label']] && { 'Label': values[columnIndexMap['label']] }),
-                                    ...(columnIndexMap['strain'] && values[columnIndexMap['strain']] && { 'Strain': values[columnIndexMap['strain']] }),
-                                    ...(columnIndexMap['isolate'] && values[columnIndexMap['isolate']] && { 'IsolateName': values[columnIndexMap['isolate']] }),
-                                    ...(columnIndexMap['breed'] && values[columnIndexMap['breed']] && { 'Breed': values[columnIndexMap['breed']] }),
-                                    ...(columnIndexMap['cultivar'] && values[columnIndexMap['cultivar']] && { 'Cultivar': values[columnIndexMap['cultivar']] }),
-                                },
-                                BioProject: {
-                                    PrimaryId: fns.getRowValue(values, 'bioproject_accession')
-                                },
-                                // Name of attribute package used to validate the sample, for example: MIGS.ba.air.4.0. 
-                                // See https://www.ncbi.nlm.nih.gov/biosample/docs/packages/ for the full list of available packages.
-                                Package: fns.getRowValue(values, 'attribute_package'),
-                                Attributes: {
-                                    Attribute: attributes
-                                }
-
-                            }
+                            ...(fns.getBioSampleXml(values))
                         }
                     }
                 }
@@ -297,7 +254,97 @@ const fns = {
 
             return rowRet;
         });
-        return ret;
+    },
+
+    getBioSampleXml(values) {
+        let attributes = [];
+        values.forEach((val, i) => {
+            // These indices are handled separately in the data object
+            let indicesToIgnore = [
+                'sample_name', 'description',
+                'organism', 'isolate',
+                'bioproject_accession',
+                'attribute_package',
+
+                // These indices are not confirmed to match the tsv format of NCBI
+                'taxonomy', 'label', 'strain', 'breed', 'cultivar',
+                'title'
+            ];
+            let shouldIgnoreAttribute = !columnIndices[i] || indicesToIgnore.indexOf(columnIndices[i]) !== -1;
+
+            if (val && !shouldIgnoreAttribute) {
+                attributes.push({
+                    '@attribute_name': columnIndices[i],
+                    '#text': val
+                })    
+            }
+        });
+
+        let bioSampleXml = {
+            BioSample: {
+                '@schema_version': '2.0',
+                SampleId: {
+                    SPUID: {
+                        '@spuid_namespace': config.organizationConfig.spuid_namespace,
+                        '#text': fns.getRowValue(values, 'sample_name')
+                    }
+                },
+                Descriptor: {
+                    ...(columnIndexMap['title'] && values[columnIndexMap['title']] && { 'Title': fns.getRowValue(values, 'title') }),
+                    Description: fns.getRowValue(values, 'description'),
+                    // TODO: Currently not supported
+                    // ExternalLink: {
+                        // '@label': 'link title'
+                        // URL: '',
+                        // ExternalId: typePrimaryId,
+                        // EntrezQuery: ''
+                    // }
+                },
+                Organism: {
+                    ...(columnIndexMap['taxonomy'] && values[columnIndexMap['taxonomy']] && { '@taxonomy_id': values[columnIndexMap['taxonomy']] }),
+                    ...(columnIndexMap['organism'] && values[columnIndexMap['organism']] && { 'OrganismName': values[columnIndexMap['organism']] }),
+                    ...(columnIndexMap['label'] && values[columnIndexMap['label']] && { 'Label': values[columnIndexMap['label']] }),
+                    ...(columnIndexMap['strain'] && values[columnIndexMap['strain']] && { 'Strain': values[columnIndexMap['strain']] }),
+                    ...(columnIndexMap['isolate'] && values[columnIndexMap['isolate']] && { 'IsolateName': values[columnIndexMap['isolate']] }),
+                    ...(columnIndexMap['breed'] && values[columnIndexMap['breed']] && { 'Breed': values[columnIndexMap['breed']] }),
+                    ...(columnIndexMap['cultivar'] && values[columnIndexMap['cultivar']] && { 'Cultivar': values[columnIndexMap['cultivar']] }),
+                },
+                BioProject: {
+                    PrimaryId: fns.getRowValue(values, 'bioproject_accession')
+                },
+                // Name of attribute package used to validate the sample, for example: MIGS.ba.air.4.0. 
+                // See https://www.ncbi.nlm.nih.gov/biosample/docs/packages/ for the full list of available packages.
+                Package: fns.getRowValue(values, 'attribute_package'),
+                Attributes: {
+                    Attribute: attributes
+                }
+            }
+        };
+
+        let validationXml = builder
+            .create(bioSampleXml)
+            .end({ pretty: true });
+
+        let biosampleSchema = fs.readFileSync(path.resolve(__dirname, `./xsds/BioSample.xsd`));
+        let biosampleSchemaDoc = libxmljs.parseXml(biosampleSchema, {baseUrl: path.resolve(__dirname, `./xsds/`)});
+        let biosampleDoc = libxmljs.parseXml(validationXml.toString());
+
+        if (!biosampleDoc.validate(biosampleSchemaDoc)) {
+            console.log(chalk.red(
+                '\nThere is a validation problem with a BioSample instance in this submission\n' 
+                + 'This sample will not be excluded in the submission xml, and should not effect the\n'
+                + 'other intended uploads. However, it will likely fail in the NCBI submission portal.\n\n'
+                + 'The relevant BioSample segment has been written to your log file.\n'
+                + 'If this problem persists, please send your debug.log to the dev team. ')
+                + chalk.red.dim('Thank you!')
+            , false);
+
+            debugLog('BioSample Validation Error:');
+            debugLog(biosampleDoc.validationErrors);
+            debugLog(validationXml);
+        }
+
+        return bioSampleXml;
     },
 
     process: async () => {
@@ -314,6 +361,7 @@ const fns = {
             columnIndexMap[normalizedName] = i;
             return normalizedName;
         });
+        debugLog(`columns: ${columnIndices}`)
 
         let xmlJson = {
             Submission: {
@@ -328,12 +376,29 @@ const fns = {
         xml = builder
             .create(xmlJson)
             .end({ pretty: true });
+            
+        let submissionSchema = fs.readFileSync(path.resolve(__dirname, `./xsds/Submission.xsd`));
+        let submissionSchemaDoc = libxmljs.parseXml(submissionSchema, {baseUrl: path.resolve(__dirname, `./xsds/`)});
+        let submissionDoc = libxmljs.parseXml(xml.toString());
+        debugLog(`submission xml is valid: (${submissionDoc.validate(submissionSchemaDoc)})`)
 
         fs.writeFile(outputFilepath, xml.toString(), () => {
             process.stdout.clearLine();
             process.stdout.cursorTo(0);
             process.stdout.write(`Finished Processing {${inputFilename}.tsv}\n`);
-            fns.uploadFile();
+
+            if (submissionDoc.validate(submissionSchemaDoc)) {
+                fns.uploadFile();
+            }
+            else {
+                console.log(chalk.red(
+                    'The submission xml file fails validation. Please check your config\n' 
+                    + 'file and try again. If the problem persists, please send us your\n'
+                    + '   1. input tsv file\n'
+                    + '   2. output xml file\n'
+                    + '   3. /logs/debug.log\n'
+                ), false);
+            }
             return;
         });
     },
@@ -364,7 +429,7 @@ const fns = {
 
     uploadFile: async () => {
         if (!uploadFolder) {
-            console.log('Skipping upload.');
+            console.log('No upload folder defined; skipping upload.');
             return;
         }
 
@@ -399,8 +464,10 @@ const fns = {
 
         // Get all the report names
         files.forEach(async (file) => {
-            console.log('DEBUG: looking at file', file)
-            console.log('DEBUG: file name', file.name)
+            debugLog('looking at file');
+            debugLog(file.toString());
+            debugLog(JSON.stringify(file));
+            debugLog(`file name: ${file.name}`)
             if (file.name.substring(0, 7) === 'report.') {
                 reports.push(file.name);
             }
@@ -413,6 +480,8 @@ const fns = {
                 sensitivity: 'base'
             });
         });
+        debugLog('reports found:');
+        debugLog(reports);
 
         // testing array will be sorted to:
         // [ report.1, report.2, report.11, report]
@@ -430,9 +499,11 @@ const fns = {
     },
 
     processReport: (reportPath) => {
+        debugLog(`processing report: ${reportPath}`);
         let reportFileContent = fs.readFileSync(reportPath, 'utf8');
         parser.parseString(reportFileContent, (err, report) => {
             let status = report.SubmissionStatus.$.status.toLowerCase();
+            debugLog(`report status: ${status}`)
             if (status === 'processed-ok' || status === 'processed-error' || status === 'deleted' || status === 'failed') {
                 fns.writeAttributesTsv(report);
                 fns.stopPolling();
@@ -477,6 +548,7 @@ try {
     fns.getOutputFileDetails();
     fns.process();
 } catch (err) {
-    console.log(err.message);
+    console.log(chalk.red(`\n\nThere was an unexpected error: `) + err.message);
+    debugLog(err.stack)
     return;
 }
