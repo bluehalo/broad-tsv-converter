@@ -21,6 +21,13 @@ Before running the script, you will need to do the following steps:
 --------------------------------------------------
   How to Use
 --------------------------------------------------
+
+Example
+
+```
+node src/main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
+```
+
 | Parameter      |flag| Required    | Description |
 |----------------|----|------------|-------------|
 | help           | -h |            | print help table |
@@ -30,10 +37,6 @@ Before running the script, you will need to do the following steps:
 | uploadComment  | -c | (optional) | description or comment about this submission |
 | releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01' | 
 --------------------------------------------------
-
-Example
-> node main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
-
 --------------------------------------------------
 
 Going through the flow:
