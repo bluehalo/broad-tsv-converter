@@ -9,6 +9,7 @@
   "dependencies": {
     "basic-ftp": "^4.6.6",
     "chalk": "^4.1.0",
+    "libxmljs": "^0.19.7",
     "xml2js": "^0.4.23",
     "xmlbuilder": "^15.1.1"
   },

@@ -36,6 +36,7 @@ node src/main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
 | uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder |
 | uploadComment  | -c | (optional) | description or comment about this submission |
 | releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01' | 
+| runTestMode    |    | (optional) | Run the script in test mode (aka: skip ftp upload) | 
 --------------------------------------------------
 
 Going through the flow:

@@ -215,7 +215,7 @@ const fns = {
                 ...(config.organizationConfig.role && { '@group_id': config.organizationConfig.group_id }),
                 ...(config.organizationConfig.role && { '@url': config.organizationConfig.url }),
             },
-            ...(hold && { Hold: { '@release_date': config.organizationConfig.url }}),
+            ...(hold && { Hold: { '@release_date': hold }}),
             SubmissionSoftware: {
                 '@version': 'asymmetrik-tsv@1.0.0'
             }
@@ -398,6 +398,8 @@ const fns = {
                     + '   2. output xml file\n'
                     + '   3. /logs/debug.log\n'
                 ), false);
+                debugLog(submissionDoc.validationErrors);
+                debugLog(xml);
             }
             return;
         });
