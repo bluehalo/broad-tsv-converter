@@ -2,8 +2,6 @@ FROM node:lts-buster
 
 LABEL maintainer "Daniel Park <dpark@broadinstitute.org>"
 
-RUN npm install libxmljs
-
 # Bring in other supporting files
 COPY . /opt/converter
 
