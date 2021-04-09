@@ -145,6 +145,7 @@ const fns = {
                     process.exit(1);
                 case 'runtestmode':
                 case '--runtestmode':
+                case '-t':
                     skipFtp = true;
                     break;
             }
