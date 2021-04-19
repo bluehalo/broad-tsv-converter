@@ -6,6 +6,7 @@ exports.ftpConfig = {
     port: 21,
     user: 'username',
     pass: 'pass',
+    secure: false,
     pollingInterval: 3000 // check on submission results every {x} milliseconds
 };
 
@@ -19,6 +20,7 @@ exports.organizationConfig = {
     //------------------------
     name: 'Broad Institute',
     type: 'institute',  // Options: 'consortium', 'center', 'institute', 'lab'
+    spuid: 'Temp-SPUID',
     spuid_namespace: 'Institute Namespace',
     contact: {
         email: 'organizationemail@email.com'
