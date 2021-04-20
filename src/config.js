@@ -20,7 +20,6 @@ exports.organizationConfig = {
     //------------------------
     name: 'Broad Institute',
     type: 'institute',  // Options: 'consortium', 'center', 'institute', 'lab'
-    spuid: 'Temp-SPUID',
     spuid_namespace: 'Institute Namespace',
     contact: {
         email: 'organizationemail@email.com'
