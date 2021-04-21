@@ -47,6 +47,7 @@ uploadFolder   | -u | (optional) | if provided, the generated xml file will be u
 uploadComment  | -c | (optional) | description or comment about this submission
 releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01'
 runTestMode    | -t |            | Run the test mode (skip FTP steps, and run with sample responses)
+debug          |    |            | Turn on verbose details
 --------------------------------------------------
 
 Example:
@@ -117,6 +118,10 @@ const fns = {
                 case '--runtestmode':
                 case '-t':
                     submissionParams.skipFtp = true;
+                    break;
+                case 'debug':
+                case '--debug':
+                    submissionParams.debug = true;
                     break;
             }
         });

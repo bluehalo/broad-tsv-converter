@@ -10,7 +10,10 @@ module.exports = {
         logger.log('Connecting to FTP client...')
     
         ftpClient = new ftp.Client();
-        ftpClient.ftp.verbose = true;
+
+        if (submissionParams.debug) {
+            ftpClient.ftp.verbose = true;
+        }
     
         // errors will be caught in the parent try catch
         await ftpClient.access({

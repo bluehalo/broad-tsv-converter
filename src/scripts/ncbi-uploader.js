@@ -27,15 +27,11 @@ getReports = async () => {
     let files = submissionParams.skipFtp
         // testing data, to just make sure the sorting will take the last available report
         ? [{ name: 'report.xml' }]
-        : await ftpClient.list(uploadFolder);
+        : await ftpClient.list(submissionParams.uploadFolder);
     let reports = [];
 
     // Get all the report names
-    files.forEach(async (file) => {
-        logger.debug('looking at file');
-        logger.debug(file.toString());
-        logger.debug(JSON.stringify(file));
-        logger.debug(`file name: ${file.name}`)
+    files.forEach((file) => {
         if (file.name.substring(0, 7) === 'report.') {
             reports.push(file.name);
         }
@@ -60,7 +56,7 @@ getReports = async () => {
     let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${lastReport}`);
 
     if (!submissionParams.skipFtp) {
-        await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${file.name}`);
+        await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${lastReport}`);
     }
 
     processReport(reportPath);
@@ -81,8 +77,12 @@ processReport = (reportPath) => {
 
             let status = report.SubmissionStatus.$.status.toLowerCase();
             logger.debug(`report status: ${status}`)
-            if (status === 'processed-ok' || status === 'processed-error' || status === 'deleted' || status === 'failed') {
+            if (status === 'processed-ok') {
                 writeAttributesTsv(report);
+                stopPolling();
+            }
+            else if (status === 'processed-error' || status === 'deleted' || status === 'failed') {
+                logger.log(chalk.red(`There was an error processing this report: ${status}, please open the report for more details`));
                 stopPolling();
             }
         });
@@ -137,13 +137,14 @@ module.exports = {
             return;
         }
     
-        ftpClient = ftpService.startFtpClient(submissionParams);
+        ftpClient = await ftpService.startFtpClient(submissionParams);
         logger.log(`Uploading generated xml file to ${submissionParams.uploadFolder}`);
     
         if (submissionParams.skipFtp) {
             startPolling();
         }
         else {
+            await ftpClient.ensureDir(submissionParams.uploadFolder);
             await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
             await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
             startPolling();
