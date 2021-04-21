@@ -30,13 +30,24 @@ getReports = async () => {
         : await ftpClient.list(submissionParams.uploadFolder);
     let reports = [];
 
+    let shouldPoll = false;
+
     // Get all the report names
     files.forEach((file) => {
         if (file.name.substring(0, 7) === 'report.') {
             reports.push(file.name);
         }
+        else if (file.name === 'submit.ready') {
+            shouldPoll = true;
+        }
     });
 
+    if (!shouldPoll) {
+        this.processReports(reports);
+    }
+}
+
+processReports = async (reports) => {
     // find the latest report version
     reports = reports.sort((a, b) => {
         return a.localeCompare(b, undefined, {
@@ -55,11 +66,12 @@ getReports = async () => {
         : reports[reports.length - 2];
     let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${lastReport}`);
 
-    if (!submissionParams.skipFtp) {
-        await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${lastReport}`);
+    if (lastReport) {
+        if (!submissionParams.skipFtp) {
+            await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${lastReport}`);
+        }
+        processReport(reportPath);
     }
-
-    processReport(reportPath);
 }
 
 processReport = (reportPath) => {
