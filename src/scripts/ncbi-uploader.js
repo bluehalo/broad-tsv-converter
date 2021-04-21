@@ -22,7 +22,7 @@ startPolling = async () => {
 }
 
 getReports = async () => {
-    logger.log('Getting list of reports from FTP')
+    logger.log('Checking reports from FTP')
     // basic-ftp list method only supports MLSD, Unix, and DOS directory listings
     let files = submissionParams.skipFtp
         // testing data, to just make sure the sorting will take the last available report
@@ -43,7 +43,7 @@ getReports = async () => {
     });
 
     if (!shouldPoll) {
-        this.processReports(reports);
+        processReports(reports);
     }
 }
 
