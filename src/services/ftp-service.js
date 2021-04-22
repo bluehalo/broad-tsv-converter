@@ -24,10 +24,6 @@ module.exports = {
         });
 
         return ftpClient;
-    },
-
-    downloadLatestReport: async (submissionParams, client) => {
-
     }
 
 };

@@ -10,67 +10,69 @@ const ftpService = require('../services/ftp-service');
 const { Readable } = require('stream');
 
 // FTP variables
-let ftpClient, polling;
+let ftpClient;
 
 // Variables
 let submissionParams;
 let data;
 
-startPolling = async () => {
-    logger.log(`Starting polling, waiting ${config.ftpConfig.pollingInterval} ms to check submission status`)
-    polling = setInterval(getReports, config.ftpConfig.pollingInterval);
+poll = async (initial = false) => {
+    if (initial) {
+        logger.log(`Starting polling, waiting ${config.ftpConfig.pollingInterval} ms to check submission status`)
+    }
+
+    // Switched from Interval to Timeout:
+    // Interval was running into async issues where the second check was kicked off
+    // before the first one had completed.
+    polling = setTimeout(getReports, config.ftpConfig.pollingInterval);
 }
 
 getReports = async () => {
-    logger.log('Checking reports from FTP')
-    // basic-ftp list method only supports MLSD, Unix, and DOS directory listings
-    let files = submissionParams.skipFtp
-        // testing data, to just make sure the sorting will take the last available report
-        ? [{ name: 'report.xml' }]
-        : await ftpClient.list(submissionParams.uploadFolder);
-    let reports = [];
-
-    let shouldPoll = false;
-
-    // Get all the report names
-    files.forEach((file) => {
-        if (file.name.substring(0, 7) === 'report.') {
-            reports.push(file.name);
-        }
-        else if (file.name === 'submit.ready') {
-            shouldPoll = true;
-        }
-    });
-
-    if (!shouldPoll) {
-        processReports(reports);
-    }
+    submissionParams.skipFtp
+        ? getFakeReports()
+        : getRealReports();
 }
 
-processReports = async (reports) => {
-    // find the latest report version
-    reports = reports.sort((a, b) => {
-        return a.localeCompare(b, undefined, {
-            numeric: true,
-            sensitivity: 'base'
-        });
-    });
-    logger.debug('reports found:');
-    logger.debug(reports);
+getFakeReports = () => {
+    logger.log('Grabbing fake report for testing purposes');
+    let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-report.xml`);
+    processReport(reportPath);
+}
 
-    // testing array will be sorted to:
-    // [ report.1, report.2, report.11, report]
-    // Ignore "report.xml", assuming it's the last result.
-    let lastReport = reports.length === 1
-        ? reports[0]
-        : reports[reports.length - 2];
-    let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${lastReport}`);
+getRealReports = async () => {
+    try {
+        let files = await ftpClient.list(submissionParams.uploadFolder);
 
-    if (lastReport) {
-        if (!submissionParams.skipFtp) {
-            await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${lastReport}`);
+        let highestReportNumber = -1;
+
+        // Get all the report names
+        for (let file of files) {
+            if (file.name.substring(0, 7) === 'report.') {
+                let split = file.name.split('.');
+                if (split[1] === 'xml') {
+                    highestReportNumber = 0;
+                }
+                else {
+                    let reportNumber = parseInt(split[1]);
+                    highestReportNumber = Math.max(highestReportNumber, reportNumber);
+                }
+            }
+            else if (file.name === 'submit.ready') {
+                // Exit this entire method, wait to poll again.
+                logger.log('Submission queued...');
+                return poll();
+            }
         }
-        processReport(reportPath);
+
+        // Only way to access this point of the code is if the submit.ready file is not present.
+        let reportName = highestReportNumber > 0
+            ? `report.${highestReportNumber}.xml`
+            : 'report.xml';
+        let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
+        await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/report.${highestReportNumber}.xml`);
+        await processReport(reportPath);
+    } catch (error) {
+        console.log(chalk.red(error.stack))
     }
 }
 
@@ -93,9 +95,52 @@ processReport = (reportPath) => {
                 writeAttributesTsv(report);
                 stopPolling();
             }
-            else if (status === 'processed-error' || status === 'deleted' || status === 'failed') {
+            else if (status === 'failed') {
                 logger.log(chalk.red(`There was an error processing this report: ${status}, please open the report for more details`));
+                logger.log(chalk.red(reportPath));
                 stopPolling();
+            }
+            else {
+                // NCBI documentation indicates these action statuses can possibly be:
+                //    queued, processing, processed-ok, processed-error, deleted.
+                // In practice, we also discovered they can have the status 'submitted'
+                let actionStatuses = {
+                    queued: 0,
+                    submitted: 0,
+                    processing: 0,
+                    'processed-ok': 0,
+                    'processed-error': 0,
+                    deleted: 0
+                };
+
+                // Count them up!
+                report.SubmissionStatus.Action.forEach((action) => {
+                    let status = action.$.status;
+                    if (!actionStatuses[status]) {
+                        actionStatuses[status] = 0;
+                    }
+                    actionStatuses[status]++;
+                });
+
+                let hasSubmittedActions = actionStatuses.submitted > 0;
+                let hasQueuedActions = actionStatuses.queued > 0;
+                let hasProcessingActions = actionStatuses.processing > 0;
+                if (hasSubmittedActions || hasQueuedActions || hasProcessingActions) {
+                    let completed = actionStatuses['processed-ok'] + actionStatuses['processed-error'] + actionStatuses.deleted;
+                    let remaining = completed + actionStatuses.queued + actionStatuses.submitted + actionStatuses.processing;
+                    logger.log(`Submission is in progress... (Status: ${completed}/${remaining})`);
+                    fs.unlinkSync(reportPath);
+                    poll();
+                }
+                else {
+                    logger.log(`Finished processing submission.`);
+
+                    if (actionStatuses['processed-error'] > 0) {
+                        logger.log(chalk.red(`There was a processing error on ${actionStatuses['processed-error']} action(s), please open the report for more details.`));
+                        logger.log(chalk.red(reportPath));
+                    }
+                    stopPolling();
+                }
             }
         });
     } catch(e) {
@@ -130,9 +175,7 @@ writeAttributesTsv = (report) => {
 }
 
 stopPolling = () => {
-    logger.log('Halting polling, and closing FTP client...')
-    clearInterval(polling);
-    polling = 0;
+    logger.log('Halting polling, and closing FTP client...');
 
     if (!submissionParams.skipFtp) {
         ftpClient.close();
@@ -148,18 +191,24 @@ module.exports = {
             logger.log('No upload folder defined; skipping upload.');
             return;
         }
-    
-        ftpClient = await ftpService.startFtpClient(submissionParams);
-        logger.log(`Uploading generated xml file to ${submissionParams.uploadFolder}`);
-    
-        if (submissionParams.skipFtp) {
-            startPolling();
-        }
-        else {
-            await ftpClient.ensureDir(submissionParams.uploadFolder);
-            await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
-            await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
-            startPolling();
+
+        try {
+            logger.log(`Uploading generated xml file to ${submissionParams.uploadFolder}`);
+
+            if (submissionParams.skipFtp) {
+                poll(true);
+            }
+            else {
+                ftpClient = await ftpService.startFtpClient(submissionParams);
+                await ftpClient.ensureDir(submissionParams.uploadFolder);
+                await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
+                await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
+                poll(true);
+            }
+
+        } catch (err) {
+            logger.log(chalk.red(err.message));
+            logger.debug(err.stack);
         }
     }
 };
