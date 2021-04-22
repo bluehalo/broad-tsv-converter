@@ -2,7 +2,7 @@ const config = require('../../config');
 const chalk = require('chalk');
 
 const xmlService = require('../../services/xml-service');
-const logger = require('../../services/logger')('a', 'submission');
+const logger = require('../../services/logger')('a', 'submissn');
 
 const biosampleGenerator = require('./biosample');
 

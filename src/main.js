@@ -3,7 +3,7 @@ const chalk = require('chalk');
 const path = require('path');
 const fs = require('fs');
 
-const logger = require('./services/logger')('w');
+const logger = require('./services/logger')('w', '  main  ');
 const tsvConverter = require('./scripts/tsv-to-xml');
 const ncbiUploader = require('./scripts/ncbi-uploader');
 
