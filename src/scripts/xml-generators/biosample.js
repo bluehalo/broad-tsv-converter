@@ -14,12 +14,12 @@ module.exports = {
             // These indices are handled separately in the data object
             let indicesToIgnore = [
                 'sample_name', 'description',
-                'organism', 'isolate',
+                'organism',
                 'bioproject_accession',
                 'attribute_package',
 
                 // These indices are not confirmed to match the tsv format of NCBI
-                'taxonomy', 'label', 'strain', 'breed', 'cultivar',
+                'taxonomy', 'label', 'breed', 'cultivar',
                 'title'
             ];
             let shouldIgnoreAttribute = !columnIndices[i] || indicesToIgnore.indexOf(columnIndices[i]) !== -1;
