@@ -43,6 +43,7 @@ getRealReports = async () => {
     try {
         let files = await ftpClient.list(submissionParams.uploadFolder);
 
+        logger.log(`Checking ${files.length} files`);
         let highestReportNumber = -1;
 
         // Get all the report names
@@ -59,7 +60,7 @@ getRealReports = async () => {
             }
             else if (file.name === 'submit.ready') {
                 // Exit this entire method, wait to poll again.
-                logger.log('Submission queued...');
+                logger.log('Submission status: queued');
                 return poll();
             }
         }
@@ -90,7 +91,8 @@ processReport = (reportPath) => {
             }
 
             let status = report.SubmissionStatus.$.status.toLowerCase();
-            logger.debug(`report status: ${status}`)
+            logger.debug(`Submission status: ${status}`);
+
             if (status === 'processed-ok') {
                 writeAttributesTsv(report);
                 stopPolling();
@@ -192,23 +194,20 @@ module.exports = {
             return;
         }
 
-        try {
-            logger.log(`Uploading generated xml file to ${submissionParams.uploadFolder}`);
+        if (submissionParams.skipFtp) {
+            poll(true);
+        }
+        else {
+            ftpClient = await ftpService.startFtpClient(submissionParams);
+            await ftpClient.ensureDir(submissionParams.uploadFolder);
 
-            if (submissionParams.skipFtp) {
-                poll(true);
-            }
-            else {
-                ftpClient = await ftpService.startFtpClient(submissionParams);
-                await ftpClient.ensureDir(submissionParams.uploadFolder);
-                await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
-                await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
-                poll(true);
-            }
+            await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
+            logger.log(`Uploaded ${submissionParams.uploadFolder}/submission.xml`);
 
-        } catch (err) {
-            logger.log(chalk.red(err.message));
-            logger.debug(err.stack);
+            await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
+            logger.log(`Uploaded ${submissionParams.uploadFolder}/submit.ready`);
+
+            poll(true);
         }
     }
 };

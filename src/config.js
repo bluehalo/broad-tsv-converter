@@ -7,7 +7,7 @@ exports.ftpConfig = {
     user: 'username',
     pass: 'pass',
     secure: false,
-    pollingInterval: 30 /* seconds */ * 1000 // check on submission results every {x} milliseconds
+    pollingInterval: 10 /* seconds */ * 1000 // check on submission results every {x} milliseconds
 };
 
 //-------------------------------------------
