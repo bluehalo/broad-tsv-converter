@@ -36,7 +36,10 @@ module.exports = {
                 + '   2. output xml file\n'
                 + '   3. /logs/debug.log\n'
             ), false);
-            process.exit(1);
+
+            if (!submissionParams.force) {
+                process.exit(1);
+            }
         }
     },
 

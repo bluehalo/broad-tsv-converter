@@ -10,7 +10,7 @@ const ftpService = require('../services/ftp-service');
 const { Readable } = require('stream');
 
 // FTP variables
-let ftpClient;
+let ftpClient, isPolling;
 
 // Variables
 let submissionParams;
@@ -18,6 +18,7 @@ let data;
 
 poll = async (initial = false) => {
     if (initial) {
+        isPolling = true;
         logger.log(`Starting polling, waiting ${config.ftpConfig.pollingInterval} ms to check submission status`)
     }
 
@@ -75,12 +76,16 @@ getRealReports = async () => {
             ? `report.${highestReportNumber}.xml`
             : 'report.xml';
 
-        let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
-        await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/report.${highestReportNumber}.xml`);
-        await processReport(reportPath);
+        await downloadReport(reportName);
     } catch (error) {
         console.log(chalk.red(error.stack))
     }
+}
+
+downloadReport = async (reportName) => {
+    let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
+    await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${reportName}`);
+    await processReport(reportPath);
 }
 
 processReport = (reportPath) => {
@@ -184,14 +189,30 @@ writeAttributesTsv = (report) => {
 }
 
 stopPolling = () => {
-    logger.log('Halting polling, and closing FTP client...');
+    if (isPolling) {
+        isPolling  = false;
 
-    if (!submissionParams.skipFtp) {
-        ftpClient.close();
+        logger.log('Halting polling, and closing FTP client...');
+
+        if (!submissionParams.skipFtp && ftpClient) {
+            ftpClient.close();
+        }
     }
 }
 
 module.exports = {
+    processRequest: async (submissionParams_, data_) => {
+        submissionParams = submissionParams_;
+        data = data_;
+
+        if (submissionParams.reportFilename) {
+            await module.exports.extractTsvFromReport(submissionParams_, data_);
+        }
+        else if (submissionParams.uploadFolder) {
+            await module.exports.uploadFile(submissionParams_, data_);
+        }
+    },
+
     uploadFile: async (submissionParams_, data_) => {
         submissionParams = submissionParams_;
         data = data_;
@@ -215,6 +236,25 @@ module.exports = {
             logger.log(`Uploaded ${submissionParams.uploadFolder}/submit.ready`);
 
             poll(true);
+        }
+    },
+
+    extractTsvFromReport: async (submissionParams_, data_) => {
+        submissionParams = submissionParams_;
+        data = data_;
+
+        if (!submissionParams.reportFilename) {
+            logger.log('No report declared; skipping extract tsv from report');
+            return;
+        }
+
+        if (submissionParams.uploadFolder) {
+            ftpClient = await ftpService.startFtpClient(submissionParams);
+            await downloadReport(submissionParams.reportFilename);
+        }
+        else {
+            let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.reportFilename}`);
+            processReport(reportPath);
         }
     }
 };

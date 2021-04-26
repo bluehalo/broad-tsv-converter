@@ -35,9 +35,11 @@ node src/main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
 | outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename |
 | uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder |
 | uploadComment  | -c | (optional) | description or comment about this submission |
+| processReport  | -r | (optional) | filename for report to convert to tsv - If upload folder is included, it will be downloaded from the FTP, otherwise, the script will look in the local files |
 | releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01' | 
 | runTestMode    |    | (optional) | Run the script in test mode (aka: skip ftp upload) | 
 | debug          |    | (optional) | Show verbose logging details | 
+| force          |    | (optional) | Force upload and processing, even when validation fails | 
 --------------------------------------------------
 
 Going through the flow:

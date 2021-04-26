@@ -45,13 +45,16 @@ inputFilename  | -i | (required) | filename for the tsv file to be uploaded
 outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename
 uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder
 uploadComment  | -c | (optional) | description or comment about this submission
+processReport  | -p | (optional) | filename for report to convert to tsv - If upload folder is included, it will be downloaded from the FTP, otherwise, the script will look in the local files
 releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01'
 runTestMode    | -t |            | Run the test mode (skip FTP steps, and run with sample responses)
 debug          |    |            | Turn on verbose details
+force          |    |            | Force upload / processing, even if validation fails
 --------------------------------------------------
 
 Example:
 node main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
+node main.js -i=sample.tsv --runTestMode --debug --force
 
 --------------------------------------------------
 `;
@@ -102,6 +105,12 @@ const fns = {
                 case '-c':
                     submissionParams.comment = mapEntry[1];
                     break;
+                case 'processReport':
+                case '--processReport':
+                case '-p':
+                    submissionParams.force = false;
+                    submissionParams.reportFilename = mapEntry[1];
+                    break;
                 case 'hold':
                 case '--hold':
                 case 'releasedate':
@@ -122,6 +131,10 @@ const fns = {
                 case 'debug':
                 case '--debug':
                     submissionParams.debug = true;
+                    break;
+                case 'force':
+                case '--force':
+                    submissionParams.force = true;
                     break;
             }
         });
@@ -153,8 +166,9 @@ let execute = async () => {
         fns.extractParameters();
         fns.getInputFile();
         fns.getOutputFileDetails();
+
         let data = await tsvConverter.process(submissionParams);
-        ncbiUploader.uploadFile(submissionParams, data);
+        ncbiUploader.processRequest(submissionParams, data);
     } catch (err) {
         logger.log(chalk.red(`\n\nThere was an unexpected error: `) + err.message);
         logger.debug(err.stack)
