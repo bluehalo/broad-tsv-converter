@@ -250,7 +250,13 @@ module.exports = {
 
         if (submissionParams.uploadFolder) {
             ftpClient = await ftpService.startFtpClient(submissionParams);
-            await downloadReport(submissionParams.reportFilename);
+            try {
+                await downloadReport(submissionParams.reportFilename);
+            } catch (error) {
+                logger.log(`There was an error downloading the report: ${error.message}`);
+                logger.log('Please check your inputs and try again');
+                process.exit(1);
+            }
         }
         else {
             let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.reportFilename}`);
