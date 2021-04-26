@@ -65,10 +65,16 @@ getRealReports = async () => {
             }
         }
 
+        if (highestReportNumber === -1) {
+            logger.log('Submission status: processing... awaiting first report');
+            return poll();
+        }
+
         // Only way to access this point of the code is if the submit.ready file is not present.
         let reportName = highestReportNumber > 0
             ? `report.${highestReportNumber}.xml`
             : 'report.xml';
+
         let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
         await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/report.${highestReportNumber}.xml`);
         await processReport(reportPath);
@@ -158,16 +164,17 @@ writeAttributesTsv = (report) => {
 
     let stream = fs.createWriteStream(path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-attributes.tsv`));
     stream.once('open', () => {
-        stream.write(`accession\tmessage\t${data.metadata.columnsRaw}`);
+        stream.write(`accession\tmessage\t${data.metadata.columnsRaw}\n`);
         actions.forEach((action) => {
             let response = action.Response[0];
-            let organism = response.Object[0].Meta[0].Organism[0]._;
+            let spuid = response.Object[0].$.spuid;
             let accession = response.Object[0].$.accession;
             let message = response.Message[0]._;
 
-            let val = data.metadata.dataMap[organism];
+            let val = data.metadata.dataMap[spuid];
+
             if (val) {
-                stream.write(`${accession}\t${message}\t${val}`);
+                stream.write(`${accession}\t${message}\t${val}\n`);
             }
         });
         stream.end();
