@@ -31,7 +31,7 @@ node main.js --uploadFiles=sample.tsv,submission.xml -poll=1
 node main.js --uploadFiles=sample.tsv,submission.xml -poll=disabled
 ```
 
-| Parameter      |flag| Required    | Input Type | Default Value | Description |
+| Parameter      |flag| Required    | Type | Default Value | Description |
 |----------------|----|------------|-------|---|--------------|
 | help           | -h |            |  |   |  print help table |
 | inputFilename  | -i | (required) | string |   |  filename for the tsv file to be uploaded |
