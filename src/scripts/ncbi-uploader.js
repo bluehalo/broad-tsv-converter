@@ -209,11 +209,11 @@ module.exports = {
             await module.exports.extractTsvFromReport(submissionParams_, data_);
         }
         else if (submissionParams.uploadFolder) {
-            await module.exports.uploadFile(submissionParams_, data_);
+            await module.exports.uploadFiles(submissionParams_, data_);
         }
     },
 
-    uploadFile: async (submissionParams_, data_) => {
+    uploadFiles: async (submissionParams_, data_) => {
         submissionParams = submissionParams_;
         data = data_;
 
@@ -229,8 +229,22 @@ module.exports = {
             ftpClient = await ftpService.startFtpClient(submissionParams);
             await ftpClient.ensureDir(submissionParams.uploadFolder);
 
-            await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
-            logger.log(`Uploaded ${submissionParams.uploadFolder}/submission.xml`);
+            if (submissionParams.inputFilename) {
+                await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
+                logger.log(`Uploaded ${submissionParams.uploadFolder}/submission.xml`);
+            }
+
+            if (submissionParams.uploadFiles) {
+                let promises = submissionParams.uploadFiles.map((filename) => {
+                    let filepath = path.resolve(__dirname, `../../files/${filename}`);
+                    return ftpClient
+                        .uploadFrom(filepath, `${submissionParams.uploadFolder}/${filename}`)
+                        .then(() => {
+                            logger.log(`Uploaded ${submissionParams.uploadFolder}/${filename}`);
+                        });
+                });
+                await Promise.all(promises);
+            }
 
             await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
             logger.log(`Uploaded ${submissionParams.uploadFolder}/submit.ready`);

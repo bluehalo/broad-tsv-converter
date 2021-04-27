@@ -83,6 +83,11 @@ const fns = {
                 case '-i':
                     submissionParams.inputFilename = mapEntry[1];
                     break;
+                case 'uploadfiles':
+                case '--uploadfiles':
+                case '-f':
+                    submissionParams.uploadFiles = mapEntry[1];
+                    break;
                 case 'output':
                 case 'outputfile':
                 case '--output':
@@ -141,19 +146,65 @@ const fns = {
     },
 
     getInputFile: () => {
-        if (!submissionParams.inputFilename) throw new Error('Input Filename is Required'); 
+        if (!submissionParams.inputFilename) return;
 
-        // strip out the file type
-        let splitName = submissionParams.inputFilename.split('.');
-        if (splitName[splitName.length - 1].toLowerCase() === 'tsv') {
-            splitName.length = splitName.length - 1;
-            submissionParams.inputFilename = splitName.join(',');
-        }
+        let fileInfo = fns.extractFiletype(submissionParams.inputFilename);
+        submissionParams.fileType = fileInfo.fileType;
+        submissionParams.inputFilename = fileInfo.filename;
+        submissionParams.outputFilename = submissionParams.outputFilename || fileInfo.filename;
+    },
+
+    getUploadFiles: () => {
+        if (!submissionParams.uploadFiles) return;
+
+        let files = submissionParams.uploadFiles.split(',');
+        submissionParams.uploadFiles = files;
+
+        let fileInfo = fns.extractFiletype(files[0]);
+        submissionParams.outputFilename = submissionParams.outputFilename || fileInfo.filename;
     },
 
     getOutputFileDetails: () => {
-        submissionParams.outputFilename = submissionParams.outputFilename || submissionParams.inputFilename;
         submissionParams.outputFilepath = path.resolve(__dirname, `../files/${submissionParams.outputFilename}-submission.xml`);
+    },
+
+    processRequest: async () => {
+        if (!submissionParams.inputFilename && (!submissionParams.uploadFiles || submissionParams.uploadFiles.length === 0)) {
+            throw new Error('Invalid Input: Either inputFilename (-i) or uploadFiles (-f) must be declared');
+        }
+
+        try {
+            if (submissionParams.inputFilename) {
+                let data = await tsvConverter.process(submissionParams);
+                ncbiUploader.processRequest(submissionParams, data);
+            }
+            else {
+                ncbiUploader.processRequest(submissionParams);
+            }
+        } catch (error) {
+            process.stdout.clearLine();
+            process.stdout.cursorTo(0);
+            logger.log(`There was an error: ${error.message}`);
+        }
+    },
+
+    extractFiletype: (filename, defaultFiletype = 'tsv') => {
+        // strip out the file type
+        let splitName = filename.split('.');
+
+        // If no filetype declared, just assume the user meant to use tsv (default case)
+        if (splitName.length === 1) {
+            splitName.push(defaultFiletype);
+        }
+
+        // Extract filetype
+        let fileType = splitName[splitName.length - 1].toLowerCase();
+
+        // Join filename without the filetype
+        splitName.length = splitName.length - 1;
+        let computedFilename = splitName.join('.');
+
+        return { fileType, filename: computedFilename };
     }
 }
 
@@ -166,11 +217,10 @@ let execute = async () => {
         fns.extractParameters();
         fns.getInputFile();
         fns.getOutputFileDetails();
-
-        let data = await tsvConverter.process(submissionParams);
-        ncbiUploader.processRequest(submissionParams, data);
+        fns.getUploadFiles();
+        await fns.processRequest();
     } catch (err) {
-        logger.log(chalk.red(`\n\nThere was an unexpected error: `) + err.message);
+        logger.log(chalk.red(`\n\nThere was an error: `) + err.message);
         logger.debug(err.stack)
         return;
     }
