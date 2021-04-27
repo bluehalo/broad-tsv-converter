@@ -11,6 +11,7 @@ const ncbiUploader = require('./scripts/ncbi-uploader');
 const argv = process.argv.slice(2);
 let submissionParams = {
     poll: 'all',
+    uploaded: false,
     selectedAction: 'AddData' // AddFiles, ChangeStatus
 };
 
@@ -46,6 +47,7 @@ inputFilename  | -i | (required) | filename for the tsv file to be uploaded
 uploadFiles    | -f | (required) | (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload
 outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename
 uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder
+uploaded       |    | (optional) | Boolean, file has already been uploaded; just check on status with the same conditions
 uploadComment  | -c | (optional) | description or comment about this submission
 poll           |    | (optional) | '(number)' | 'all' | 'disabled' - Default value is 'all'. Poll until either this report number is hit or poll until all requests have been completed
 processReport  | -p | (optional) | filename for report to convert to tsv - If upload folder is included, it will be downloaded from the FTP, otherwise, the script will look in the local files
@@ -158,6 +160,10 @@ const fns = {
                 case 'force':
                 case '--force':
                     submissionParams.force = true;
+                    break;
+                case 'uploaded':
+                case '--uploaded':
+                    submissionParams.uploaded = true;
                     break;
             }
         });

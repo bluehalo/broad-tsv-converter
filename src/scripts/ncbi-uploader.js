@@ -80,19 +80,20 @@ getRealReports = async () => {
             ? `report.${highestReportNumber}.xml`
             : 'report.xml';
 
-        await downloadReport(reportName, highestReportNumber);
+        let shouldPoll = submissionParams.poll === 'all' || reportNumber < submissionParams.poll;
+        await downloadReport(reportName, shouldPoll);
     } catch (error) {
         console.log(chalk.red(error.stack))
     }
 }
 
-downloadReport = async (reportName, reportNumber) => {
+downloadReport = async (reportName, shouldPoll = false) => {
     let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
     await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${reportName}`);
-    await processReport(reportPath, reportNumber);
+    await processReport(reportPath, shouldPoll);
 }
 
-processReport = (reportPath, reportNumber) => {
+processReport = (reportPath, shouldPoll = false) => {
     try {
         logger.debug(`processing report: ${reportPath}`);
         let reportFileContent = fs.readFileSync(reportPath, 'utf8');
@@ -143,7 +144,6 @@ processReport = (reportPath, reportNumber) => {
                 let hasQueuedActions = actionStatuses.queued > 0;
                 let hasProcessingActions = actionStatuses.processing > 0;
                 let isProcessing = hasSubmittedActions || hasQueuedActions || hasProcessingActions;
-                let shouldPoll = submissionParams.poll === 'all' || reportNumber < submissionParams.poll;
 
                 if (isProcessing) {
                     let completed = actionStatuses['processed-ok'] + actionStatuses['processed-error'] + actionStatuses.deleted;
@@ -243,6 +243,10 @@ module.exports = {
         if (submissionParams.skipFtp) {
             poll(true);
         }
+        else if (submissionParams.uploaded) {
+            ftpClient = await ftpService.startFtpClient(submissionParams);
+            poll(true);
+        }
         else {
             ftpClient = await ftpService.startFtpClient(submissionParams);
             await ftpClient.ensureDir(submissionParams.uploadFolder);
@@ -283,7 +287,7 @@ module.exports = {
         if (submissionParams.uploadFolder) {
             ftpClient = await ftpService.startFtpClient(submissionParams);
             try {
-                await downloadReport(submissionParams.reportFilename);
+                await downloadReport(submissionParams.reportFilename, 'disabled');
             } catch (error) {
                 logger.log(`There was an error downloading the report: ${error.message}`);
                 logger.log('Please check your inputs and try again');
