@@ -25,16 +25,21 @@ Before running the script, you will need to do the following steps:
 Example
 
 ```
-node src/main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
+node main.js -i=sample.tsv -c="this is a comment" --uploadFolder=folder
+node main.js -i=sample.tsv --runTestMode --debug --force
+node main.js --uploadFiles=sample.tsv,submission.xml -poll=1
+node main.js --uploadFiles=sample.tsv,submission.xml -poll=disabled
 ```
 
 | Parameter      |flag| Required    | Description |
 |----------------|----|------------|-------------|
 | help           | -h |            | print help table |
 | inputFilename  | -i | (required) | filename for the tsv file to be uploaded |
+| uploadFiles    | -f | (required) | (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload |
 | outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename |
 | uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder |
 | uploadComment  | -c | (optional) | description or comment about this submission |
+| poll           |    | (optional) | '(number)' | 'all' | 'disabled' - Default value is 'all'. Poll until either this report number is hit or poll until all requests have been completed |
 | processReport  | -r | (optional) | filename for report to convert to tsv - If upload folder is included, it will be downloaded from the FTP, otherwise, the script will look in the local files |
 | releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01' | 
 | runTestMode    |    | (optional) | Run the script in test mode (aka: skip ftp upload) | 
