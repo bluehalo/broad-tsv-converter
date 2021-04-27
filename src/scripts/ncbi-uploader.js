@@ -52,7 +52,7 @@ getRealReports = async () => {
             if (file.name.substring(0, 7) === 'report.') {
                 let split = file.name.split('.');
                 if (split[1] === 'xml') {
-                    highestReportNumber = 0;
+                    highestReportNumber = Math.max(highestReportNumber, 0);
                 }
                 else {
                     let reportNumber = parseInt(split[1]);
