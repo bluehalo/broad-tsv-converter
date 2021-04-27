@@ -56,3 +56,19 @@ Going through the flow:
 4. If you choose an upload folder, the script will also generate a "sample-attributes.tsv" file from the "sample-report.xml" file
 
 --------------------------------------------------
+  Example Usages
+--------------------------------------------------
+- Generate a biosample submission:
+  - Generate a sample-submission.xml file from sample.tsv
+  - Upload to ftp:/path/to/folder/submission.xml
+  - Poll until submission processing has been completed
+  - `node main.js -i=sample.tsv --uploadFolder=ftp:/path/to/folder`
+- Generate a genbank submission:
+  - Upload content.tsv and submission.xml to /path/to/folder
+  - content.zip and submission.xml should be locally at ./files
+  - Poll until report.1.xml is generated
+  - `node main.js --uploadFiles=content.zip,submission.xml --uploadFolder=ftp:/path/to/folder -poll=1`
+- Generate a tsv file from a report.xml file
+  - convert report.5.xml file into report-attributes.tsv 
+  - report.5.xml should be located in ./reports
+  - `node main.js --inputFilename=sample.tsv --processReport=report.5.xml`
