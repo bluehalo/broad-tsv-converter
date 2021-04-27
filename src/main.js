@@ -10,6 +10,7 @@ const ncbiUploader = require('./scripts/ncbi-uploader');
 // Options Variables
 const argv = process.argv.slice(2);
 let submissionParams = {
+    poll: 'all',
     selectedAction: 'AddData' // AddFiles, ChangeStatus
 };
 
@@ -42,9 +43,11 @@ ${chalk.underline(
 'Parameter      |    |            | Description        ')}
 help           | -h |            | print help table
 inputFilename  | -i | (required) | filename for the tsv file to be uploaded
+uploadFiles    | -f | (required) | (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload
 outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename
 uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder
 uploadComment  | -c | (optional) | description or comment about this submission
+poll           |    | (optional) | '(number)' | 'all' | 'disabled' - Default value is 'all'. Poll until either this report number is hit or poll until all requests have been completed
 processReport  | -p | (optional) | filename for report to convert to tsv - If upload folder is included, it will be downloaded from the FTP, otherwise, the script will look in the local files
 releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01'
 runTestMode    | -t |            | Run the test mode (skip FTP steps, and run with sample responses)
@@ -109,6 +112,21 @@ const fns = {
                 case '--uploadcomment':
                 case '-c':
                     submissionParams.comment = mapEntry[1];
+                    break;
+                case 'poll':
+                case '--poll':
+                    let poll = mapEntry[1].toLowerCase();
+
+                    if (poll === 'all' || poll === 'disabled') {
+                        submissionParams.poll = poll;
+                    }
+                    else {
+                        submissionParams.poll = parseInt(poll);
+
+                        if (isNaN(submissionParams.poll)) {
+                            throw new Error(`Invalid input: poll must either be a number or 'all' or 'disabled'`);
+                        }
+                    }
                     break;
                 case 'processReport':
                 case '--processReport':

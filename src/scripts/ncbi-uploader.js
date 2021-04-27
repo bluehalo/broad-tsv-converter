@@ -17,6 +17,10 @@ let submissionParams;
 let data;
 
 poll = async (initial = false) => {
+    if (submissionParams.pollingEnd === 'disabled') {
+        return;
+    }
+
     if (initial) {
         isPolling = true;
         logger.log(`Starting polling, waiting ${config.ftpConfig.pollingInterval} ms to check submission status`)
@@ -76,19 +80,19 @@ getRealReports = async () => {
             ? `report.${highestReportNumber}.xml`
             : 'report.xml';
 
-        await downloadReport(reportName);
+        await downloadReport(reportName, highestReportNumber);
     } catch (error) {
         console.log(chalk.red(error.stack))
     }
 }
 
-downloadReport = async (reportName) => {
+downloadReport = async (reportName, reportNumber) => {
     let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
     await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${reportName}`);
-    await processReport(reportPath);
+    await processReport(reportPath, reportNumber);
 }
 
-processReport = (reportPath) => {
+processReport = (reportPath, reportNumber) => {
     try {
         logger.debug(`processing report: ${reportPath}`);
         let reportFileContent = fs.readFileSync(reportPath, 'utf8');
@@ -138,12 +142,21 @@ processReport = (reportPath) => {
                 let hasSubmittedActions = actionStatuses.submitted > 0;
                 let hasQueuedActions = actionStatuses.queued > 0;
                 let hasProcessingActions = actionStatuses.processing > 0;
-                if (hasSubmittedActions || hasQueuedActions || hasProcessingActions) {
+                let isProcessing = hasSubmittedActions || hasQueuedActions || hasProcessingActions;
+                let shouldPoll = submissionParams.poll === 'all' || reportNumber < submissionParams.poll;
+
+                if (isProcessing) {
                     let completed = actionStatuses['processed-ok'] + actionStatuses['processed-error'] + actionStatuses.deleted;
                     let remaining = completed + actionStatuses.queued + actionStatuses.submitted + actionStatuses.processing;
                     logger.log(`Submission is in progress... (Status: ${completed}/${remaining})`);
-                    fs.unlinkSync(reportPath);
-                    poll();
+
+                    if (shouldPoll) {
+                        fs.unlinkSync(reportPath);
+                        poll();   
+                    }
+                    else {
+                        stopPolling();
+                    }
                 }
                 else {
                     logger.log(`Finished processing submission.`);
@@ -165,6 +178,11 @@ processReport = (reportPath) => {
 }
 
 writeAttributesTsv = (report) => {
+    if (!data) {
+        logger.log('Unable to write attributes tsv');
+        return;
+    }
+
     let actions = report.SubmissionStatus.Action;
 
     let stream = fs.createWriteStream(path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-attributes.tsv`));
