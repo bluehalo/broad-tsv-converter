@@ -1,6 +1,7 @@
 const chalk = require('chalk');
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 
 const logger = require('../services/logger')('a', 'tsv->xml');
 const xmlService = require('../services/xml-service');
@@ -40,8 +41,8 @@ writeXml = async (submissionParams, xmlString) => {
             let xml = xmlService.buildXml(xmlString);
 
             fs.writeFile(submissionParams.outputFilepath, xml.toString(), () => {
-                process.stdout.clearLine();
-                process.stdout.cursorTo(0);
+                readline.clearLine(process.stdout, 0);
+                readline.cursorTo(process.stdout, 0, null);
                 let dateString = new Date().toLocaleTimeString();
                 process.stdout.write(` ${dateString}\t| tsv->xml | \tFinished Processing {${submissionParams.inputFilename}.tsv}\n`);
                 resolve(true);
@@ -54,7 +55,7 @@ writeXml = async (submissionParams, xmlString) => {
 
 module.exports = {
     process: async (submissionParams) => {
-        process.stdout.cursorTo(0);
+        readline.cursorTo(process.stdout, 0, null);
         let dateString = `${new Date().toLocaleTimeString()}`;
         process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t0%`);
         logger.debug('in tsv-to-xml.js : starting to process file');

@@ -1,5 +1,6 @@
 const config = require('../../config');
 const chalk = require('chalk');
+const readline = require('readline');
 
 const xmlService = require('../../services/xml-service');
 const logger = require('../../services/logger')('a', 'submissn');
@@ -99,8 +100,8 @@ module.exports = {
             // Log current progress, just in case this takes a long time
             let dateString = new Date().toLocaleTimeString();
             let percentageCompleted = Math.floor(rowNum * 100.0 / data.rows.length);
-            process.stdout.clearLine();
-            process.stdout.cursorTo(0);
+            readline.clearLine(process.stdout, 0);
+            readline.cursorTo(process.stdout, 0, null);
             process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t${percentageCompleted}%`);
     
             let values = d

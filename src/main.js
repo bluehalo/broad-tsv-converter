@@ -1,7 +1,6 @@
-const config = require('./config');
 const chalk = require('chalk');
 const path = require('path');
-const fs = require('fs');
+const readline = require('readline');
 
 const logger = require('./services/logger')('w', '  main  ');
 const tsvConverter = require('./scripts/tsv-to-xml');
@@ -206,8 +205,8 @@ const fns = {
                 ncbiUploader.processRequest(submissionParams);
             }
         } catch (error) {
-            process.stdout.clearLine();
-            process.stdout.cursorTo(0);
+            readline.clearLine(process.stdout, 0);
+            readline.cursorTo(process.stdout, 0, null);
             logger.log(`There was an error: ${error.message}`);
         }
     },
