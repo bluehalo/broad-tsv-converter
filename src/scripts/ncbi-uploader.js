@@ -3,11 +3,13 @@ const chalk = require('chalk');
 const fs = require('fs');
 const path = require('path');
 
-const parser = require('xml2js');
 const logger = require('../services/logger')('a', 'uploader');
 const ftpService = require('../services/ftp-service');
 
+const reportProcessor = require('./report-processor');
+
 const { Readable } = require('stream');
+const { report } = require('process');
 
 // FTP variables
 let ftpClient, isPolling;
@@ -93,117 +95,23 @@ downloadReport = async (reportName, shouldPoll = false) => {
     await processReport(reportPath, shouldPoll);
 }
 
-processReport = (reportPath, shouldPoll = false) => {
-    try {
-        logger.debug(`processing report: ${reportPath}`);
-        let reportFileContent = fs.readFileSync(reportPath, 'utf8');
+processReport =  async (reportPath, shouldPoll = false) => {
+    let reportDetails = await reportProcessor.processReport(reportPath);
 
-        parser.parseString(reportFileContent, (err, report) => {
-            if (err) {
-                logger.log(chalk.red(`There was an error parsing the downloaded report (${reportPath})`));
-                logger.debug(err);
-                stopPolling();
-                return;   
-            }
-
-            let status = report.SubmissionStatus.$.status.toLowerCase();
-            logger.debug(`Submission status: ${status}`);
-
-            if (status === 'processed-ok') {
-                writeAttributesTsv(report);
-                stopPolling();
-            }
-            else if (status === 'failed') {
-                logger.log(chalk.red(`There was an error processing this report: ${status}, please open the report for more details`));
-                logger.log(chalk.red(reportPath));
-                stopPolling();
-            }
-            else {
-                // NCBI documentation indicates these action statuses can possibly be:
-                //    queued, processing, processed-ok, processed-error, deleted.
-                // In practice, we also discovered they can have the status 'submitted'
-                let actionStatuses = {
-                    queued: 0,
-                    submitted: 0,
-                    processing: 0,
-                    'processed-ok': 0,
-                    'processed-error': 0,
-                    deleted: 0
-                };
-
-                // Count them up!
-                report.SubmissionStatus.Action.forEach((action) => {
-                    let status = action.$.status;
-                    if (!actionStatuses[status]) {
-                        actionStatuses[status] = 0;
-                    }
-                    actionStatuses[status]++;
-                });
-
-                let hasSubmittedActions = actionStatuses.submitted > 0;
-                let hasQueuedActions = actionStatuses.queued > 0;
-                let hasProcessingActions = actionStatuses.processing > 0;
-                let isProcessing = hasSubmittedActions || hasQueuedActions || hasProcessingActions;
-
-                if (isProcessing) {
-                    let completed = actionStatuses['processed-ok'] + actionStatuses['processed-error'] + actionStatuses.deleted;
-                    let remaining = completed + actionStatuses.queued + actionStatuses.submitted + actionStatuses.processing;
-                    logger.log(`Submission is in progress... (Status: ${completed}/${remaining})`);
-
-                    if (shouldPoll) {
-                        fs.unlinkSync(reportPath);
-                        poll();   
-                    }
-                    else {
-                        stopPolling();
-                    }
-                }
-                else {
-                    logger.log(`Finished processing submission.`);
-
-                    if (actionStatuses['processed-error'] > 0) {
-                        logger.log(chalk.red(`There was a processing error on ${actionStatuses['processed-error']} action(s), please open the report for more details.`));
-                        logger.log(chalk.red(reportPath));
-                    }
-                    stopPolling();
-                }
-            }
-        });
-    } catch(e) {
-        if (e.code === 'ENOENT') {
-            logger.log(chalk.red(`Error attempting to open downloaded report (${reportPath})`));
-        }
+    if (reportDetails.failed) {
+        return stopPolling();
+    }
+    else if (reportDetails.status === 'processed-ok') {
+        reportProcessor.writeAttributesTsv(report, submissionParams);
+        return stopPolling();
+    }
+    else if (reportDetails.isProcessing && shouldPoll) {
+        fs.unlinkSync(reportPath);
+        poll();
+    }
+    else {
         stopPolling();
     }
-}
-
-writeAttributesTsv = (report) => {
-    if (!data) {
-        logger.log('Unable to write attributes tsv');
-        return;
-    }
-
-    let actions = report.SubmissionStatus.Action;
-
-    let stream = fs.createWriteStream(path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-attributes.tsv`));
-    stream.once('open', () => {
-        stream.write(`accession\tmessage\t${data.metadata.columnsRaw}\n`);
-        actions.forEach((action) => {
-            let response = action.Response[0];
-            let spuid = response.Object[0].$.spuid;
-            let accession = response.Object[0].$.accession;
-            let message = response.Message[0]._;
-
-            let val = data.metadata.dataMap[spuid];
-
-            if (val) {
-                stream.write(`${accession}\t${message}\t${val}\n`);
-            }
-        });
-        stream.end();
-
-        logger.log(`Generated ${submissionParams.outputFilename}-attributes.tsv file`);
-    });
 }
 
 stopPolling = () => {
