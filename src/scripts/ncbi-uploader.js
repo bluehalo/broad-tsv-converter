@@ -80,7 +80,7 @@ getRealReports = async () => {
             ? `report.${highestReportNumber}.xml`
             : 'report.xml';
 
-        let shouldPoll = submissionParams.poll === 'all' || reportNumber < submissionParams.poll;
+        let shouldPoll = submissionParams.poll === 'all' || highestReportNumber < submissionParams.poll;
         await downloadReport(reportName, shouldPoll);
     } catch (error) {
         console.log(chalk.red(error.stack))
@@ -257,15 +257,12 @@ module.exports = {
             }
 
             if (submissionParams.uploadFiles) {
-                let promises = submissionParams.uploadFiles.map((filename) => {
+                for (filename of submissionParams.uploadFiles) {
                     let filepath = path.resolve(__dirname, `../../files/${filename}`);
-                    return ftpClient
-                        .uploadFrom(filepath, `${submissionParams.uploadFolder}/${filename}`)
-                        .then(() => {
-                            logger.log(`Uploaded ${submissionParams.uploadFolder}/${filename}`);
-                        });
-                });
-                await Promise.all(promises);
+
+                    await ftpClient.uploadFrom(filepath, `${submissionParams.uploadFolder}/${filename}`)
+                    logger.log(`Uploaded ${submissionParams.uploadFolder}/${filename}`);
+                };
             }
 
             await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
