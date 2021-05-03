@@ -48,38 +48,24 @@ getFakeReports = () => {
 
 getRealReports = async () => {
     try {
-        let files = await ftpClient.list(submissionParams.uploadFolder);
+        let hasSubmissionFile = await ftpClient.exists(`${submissionParams.uploadFolder}/submit.ready`);
 
-        logger.log(`Checking ${files.length} files`);
-        let highestReportNumber = -1;
-
-        // Get all the report names
-        for (let file of files) {
-            if (file.name.substring(0, 7) === 'report.') {
-                let split = file.name.split('.');
-                if (split[1] === 'xml') {
-                    highestReportNumber = Math.max(highestReportNumber, 0);
-                }
-                else {
-                    let reportNumber = parseInt(split[1]);
-                    highestReportNumber = Math.max(highestReportNumber, reportNumber);
-                }
-            }
-            else if (file.name === 'submit.ready') {
-                // Exit this entire method, wait to poll again.
-                logger.log('Submission status: queued');
-                return poll();
-            }
+        if (hasSubmissionFile) {
+            // Exit this entire method, wait to poll again.
+            logger.log('Submission status: queued');
+            return poll();
         }
 
-        if (highestReportNumber === -1) {
+        let files = await ftpClient.list(submissionParams.uploadFolder, 'report.([0-9]*.)?xml');
+
+        if (files.length === 0) {
             logger.log('Submission status: processing... awaiting first report');
             return poll();
         }
 
         // Only way to access this point of the code is if the submit.ready file is not present.
-        let reportName = highestReportNumber > 0
-            ? `report.${highestReportNumber}.xml`
+        let reportName = files.length - 1 > 0
+            ? `report.${files.length - 1}.xml`
             : 'report.xml';
 
         let shouldPoll = submissionParams.poll === 'all' || highestReportNumber < submissionParams.poll;
@@ -90,9 +76,10 @@ getRealReports = async () => {
 }
 
 downloadReport = async (reportName, shouldPoll = false) => {
-    let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
-    await ftpClient.downloadTo(reportPath, `${submissionParams.uploadFolder}/${reportName}`);
-    await processReport(reportPath, shouldPoll);
+    let remotePath = `${submissionParams.uploadFolder}/${reportName}`;
+    let localPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-${reportName}`);
+    await ftpClient.fastGet(remotePath, localPath);
+    await processReport(localPath, shouldPoll);
 }
 
 processReport =  async (reportPath, shouldPoll = false) => {
@@ -121,7 +108,7 @@ stopPolling = () => {
         logger.log('Halting polling, and closing FTP client...');
 
         if (!submissionParams.skipFtp && ftpClient) {
-            ftpClient.close();
+            ftpClient.end();
         }
     }
 }
@@ -157,23 +144,28 @@ module.exports = {
         }
         else {
             ftpClient = await ftpService.startFtpClient(submissionParams);
-            await ftpClient.ensureDir(submissionParams.uploadFolder);
+            await ftpClient.mkdir(submissionParams.uploadFolder, true);
 
             if (submissionParams.inputFilename) {
-                await ftpClient.uploadFrom(submissionParams.outputFilepath, `${submissionParams.uploadFolder}/submission.xml`);
+                let remotePath = `${submissionParams.uploadFolder}/submission.xml`;
+                let localPath = submissionParams.outputFilepath;
+                await ftpClient.fastPut(localPath, remotePath);
                 logger.log(`Uploaded ${submissionParams.uploadFolder}/submission.xml`);
             }
 
             if (submissionParams.uploadFiles) {
                 for (filename of submissionParams.uploadFiles) {
-                    let filepath = path.resolve(__dirname, `../../files/${filename}`);
+                    let localPath = path.resolve(__dirname, `../../files/${filename}`);
+                    let remotePath = `${submissionParams.uploadFolder}/${filename}`;
 
-                    await ftpClient.uploadFrom(filepath, `${submissionParams.uploadFolder}/${filename}`)
+                    await ftpClient.fastPut(localPath, remotePath)
                     logger.log(`Uploaded ${submissionParams.uploadFolder}/${filename}`);
                 };
             }
 
-            await ftpClient.uploadFrom(Readable.from(['']), `${submissionParams.uploadFolder}/submit.ready`);
+            let localFile = Readable.from(['']);
+            let remotePath = `${submissionParams.uploadFolder}/submit.ready`;
+            await ftpClient.put(localFile, remotePath);
             logger.log(`Uploaded ${submissionParams.uploadFolder}/submit.ready`);
 
             poll(true);
