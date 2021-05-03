@@ -26,7 +26,7 @@ module.exports = {
 
         let validationObj = xmlService.validateXml('Submission', ret, true);
         if (validationObj.isValid) {
-            logger.debug('Submission XML is valid');
+            logger.debug('Submission XML is valid', submissionParams.debug);
             return ret;
         }
         else {
@@ -120,7 +120,7 @@ module.exports = {
                     Data: {
                         '@content_type': 'XML',
                         XmlContent: {
-                            ...(biosampleGenerator.generate(data, values))
+                            ...(biosampleGenerator.generate(data, values, submissionParams.debug))
                         }
                     },
                     Identifier: {

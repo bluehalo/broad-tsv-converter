@@ -13,7 +13,7 @@ module.exports = {
             .end({ pretty: true });
     },
 
-    validateXml: (xsd, xml, buildFromString) => {
+    validateXml: (xsd, xml, buildFromString, debug = false) => {
         if (buildFromString) {
             xml = module.exports.buildXml(xml);
         }
@@ -23,9 +23,9 @@ module.exports = {
         let xmlDoc = libxmljs.parseXml(xml.toString());
     
         if (!xmlDoc.validate(xsdSchema)) {
-            logger.debug(`Validation Error: ${xsd}`);
-            logger.debug(xmlDoc.validationErrors);
-            logger.debug(xml.toString());
+            logger.debug(`Validation Error: ${xsd}`, debug);
+            logger.debug(xmlDoc.validationErrors, debug);
+            logger.debug(xml.toString(), debug);
         }
     
         return {

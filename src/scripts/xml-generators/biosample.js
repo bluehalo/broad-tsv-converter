@@ -5,7 +5,7 @@ const xmlService = require('../../services/xml-service');
 const logger = require('../../services/logger')('a', 'biosample');
 
 module.exports = {
-    generate: (data, values) => {
+    generate: (data, values, debug = false) => {
         let attributes = [];
         let columnIndices = data.metadata.columnIndices;
         let columnIndexMap = data.metadata.columnIndexMap;
@@ -84,9 +84,9 @@ module.exports = {
                 + chalk.red.dim('Thank you!')
             , false);
 
-            logger.debug('BioSample Validation Error:');
-            logger.debug(validationObj.validationErrors);
-            logger.debug(validationObj.xml);
+            logger.debug('BioSample Validation Error:', debug);
+            logger.debug(validationObj.validationErrors, debug);
+            logger.debug(validationObj.xml, debug);
         }
 
         return bioSampleXml;

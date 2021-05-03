@@ -8,13 +8,13 @@ const logger = require('../services/logger')('a', 'report-p');
 
 module.exports = {
 
-    processReport: async (reportPath) => {
+    processReport: async (reportPath, debug) => {
         let ret = {
             failed: false
         };
 
         try {
-            logger.debug(`Processing report: ${reportPath}`);
+            logger.debug(`Processing report: ${reportPath}`, debug);
             let reportFileContent = fs.readFileSync(reportPath, 'utf8');
 
             let report = await parser.parseStringPromise(reportFileContent);
@@ -22,7 +22,7 @@ module.exports = {
     
             let status = report.SubmissionStatus.$.status.toLowerCase();
             ret.status = status;
-            logger.debug(`Submission status: ${status}`);
+            logger.debug(`Submission status: ${status}`, debug);
     
             if (status === 'failed') {
                 logger.log(chalk.red(`There was an error processing this report: ${status}, please open the report for more details`));

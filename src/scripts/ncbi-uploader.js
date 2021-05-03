@@ -83,7 +83,7 @@ downloadReport = async (reportName, shouldPoll = false) => {
 }
 
 processReport =  async (reportPath, shouldPoll = false) => {
-    let reportDetails = await reportProcessor.processReport(reportPath);
+    let reportDetails = await reportProcessor.processReport(reportPath, submissionParams.debug);
 
     if (reportDetails.failed) {
         return stopPolling();
@@ -119,10 +119,10 @@ module.exports = {
         data = data_;
 
         if (submissionParams.reportFilename) {
-            await module.exports.extractTsvFromReport(submissionParams_, data_);
+            await module.exports.extractTsvFromReport(submissionParams_, data);
         }
         else if (submissionParams.uploadFolder) {
-            await module.exports.uploadFiles(submissionParams_, data_);
+            await module.exports.uploadFiles(submissionParams_, data);
         }
     },
 

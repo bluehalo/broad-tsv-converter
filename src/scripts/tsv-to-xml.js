@@ -22,7 +22,7 @@ extractData = (submissionParams) => {
         columnIndexMap[normalizedName] = i;
         return normalizedName;
     });
-    logger.debug(`columns: ${columnIndices}`);
+    logger.debug(`columns: ${columnIndices}`, submissionParams.debug);
 
     return {
         rows: data,
@@ -58,7 +58,7 @@ module.exports = {
         readline.cursorTo(process.stdout, 0, null);
         let dateString = `${new Date().toLocaleTimeString()}`;
         process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t0%`);
-        logger.debug('in tsv-to-xml.js : starting to process file');
+        logger.debug('in tsv-to-xml.js : starting to process file', submissionParams.debug);
 
         let data = extractData(submissionParams);
         let xmlString = submissionGenerator.generate(submissionParams, data);

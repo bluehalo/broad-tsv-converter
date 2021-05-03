@@ -68,7 +68,7 @@ const fns = {
     // User Input / Set Up
     //--------------------------------------------------
     extractParameters: () => {
-        logger.debug(`extracting parameters: ${argv}`)
+        logger.debug(`extracting parameters: ${argv}`, submissionParams.debug)
         if (argv.length === 0) {
             console.log(helptext, false);
             process.exit(1);
@@ -154,6 +154,9 @@ const fns = {
                     break;
                 case 'debug':
                 case '--debug':
+                case 'verbose':
+                case '--verbose':
+                case '-v':
                     submissionParams.debug = true;
                     break;
                 case 'force':
@@ -244,7 +247,7 @@ let execute = async () => {
         await fns.processRequest();
     } catch (err) {
         logger.log(chalk.red(`\n\nThere was an error: `) + err.message);
-        logger.debug(err.stack)
+        logger.debug(err.stack, submissionParams.debug)
         return;
     }
 };

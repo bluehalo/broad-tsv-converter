@@ -11,23 +11,19 @@ module.exports = {
     
         ftpClient = new Client();
 
-        if (submissionParams.debug) {
-            ftpClient.ftp.verbose = true;
-        }
-
         await module.exports.access(ftpClient, !!submissionParams.debug);
         return ftpClient;
     },
 
-    access: async (ftpClient, debug) => {
+    access: async (ftpClient, debug = false) => {
         logger.log(`Connecting to FTP`)
         try {
             await ftpClient.connect({
                 host: config.ftpConfig.host,
                 port: config.ftpConfig.port,
                 user: config.ftpConfig.user,
+                debug: (str) => logger.debug(str, debug),
                 password: config.ftpConfig.pass,
-                debug: debug,
                 retries: 3,
                 retry_minTimeout: 5000
             });
