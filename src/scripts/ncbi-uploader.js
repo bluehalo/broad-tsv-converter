@@ -56,7 +56,7 @@ getRealReports = async () => {
             return poll();
         }
 
-        let files = await ftpClient.list(submissionParams.uploadFolder, 'report.([0-9]*.)?xml');
+        let files = await ftpClient.list(submissionParams.uploadFolder, 'report.[0-9]+.xml');
 
         if (files.length === 0) {
             logger.log('Submission status: processing... awaiting first report');
@@ -64,9 +64,12 @@ getRealReports = async () => {
         }
 
         // Only way to access this point of the code is if the submit.ready file is not present.
-        let reportName = files.length - 1 > 0
-            ? `report.${files.length - 1}.xml`
-            : 'report.xml';
+        // Options for collator sort will prioritize 1 < 2 < 10
+        let collator = new Intl.Collator(undefined, {numeric: true, sensitivty: 'base'});
+        let sortedFilenames = files
+            .map((file) => file.name)
+            .sort(collator.compare);
+        let reportName = sortedFilenames.slice(-1)[0];
 
         let shouldPoll = submissionParams.poll === 'all' || highestReportNumber < submissionParams.poll;
         await downloadReport(reportName, shouldPoll);
