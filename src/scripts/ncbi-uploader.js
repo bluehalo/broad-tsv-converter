@@ -89,7 +89,7 @@ processReport =  async (reportPath, shouldPoll = false) => {
         return stopPolling();
     }
     else if (reportDetails.status === 'processed-ok') {
-        reportProcessor.writeAttributesTsv(report, submissionParams);
+        reportProcessor.writeAttributesTsv(reportDetails.report, submissionParams, data);
         return stopPolling();
     }
     else if (reportDetails.isProcessing && shouldPoll) {
@@ -144,7 +144,7 @@ module.exports = {
         }
         else {
             ftpClient = await ftpService.startFtpClient(submissionParams);
-            await ftpClient.mkdir(submissionParams.uploadFolder, true);
+            await ftpService.ensureDirectory(ftpClient, submissionParams.uploadFolder);
 
             if (submissionParams.inputFilename) {
                 let remotePath = `${submissionParams.uploadFolder}/submission.xml`;

@@ -85,7 +85,7 @@ module.exports = {
         }
     },
 
-    writeAttributesTsv: (report, submissionParams) => {
+    writeAttributesTsv: (report, submissionParams, data) => {
         if (!data) {
             logger.log('Unable to write attributes tsv');
             return;

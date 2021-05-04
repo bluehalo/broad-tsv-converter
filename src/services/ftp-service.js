@@ -33,5 +33,13 @@ module.exports = {
         } catch (err) {
             logger.log(`There was an error connecting to the ftp client: \n${err.message}\n${err.stack}`);
         }
+    },
+
+    ensureDirectory: async (ftpClient, folder) => {
+        let exists = await ftpClient.exists(folder);
+
+        if (!exists) {
+            await ftpClient.mkdir(folder, true);
+        }
     }
 };

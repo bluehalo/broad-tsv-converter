@@ -129,8 +129,8 @@ const fns = {
                         }
                     }
                     break;
-                case 'processReport':
-                case '--processReport':
+                case 'processreport':
+                case '--processreport':
                 case '-p':
                     submissionParams.force = false;
                     submissionParams.reportFilename = mapEntry[1];
@@ -169,6 +169,9 @@ const fns = {
                     break;
             }
         });
+
+        logger.debug('Extracted parameters', submissionParams.debug);
+        logger.debug(JSON.stringify(submissionParams), submissionParams.debug);
     },
 
     getInputFile: () => {
