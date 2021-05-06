@@ -74,12 +74,13 @@ getRealReports = async () => {
         let shouldPoll = submissionParams.poll === 'all' || highestReportNumber < submissionParams.poll;
         await downloadReport(reportName, shouldPoll);
     } catch (error) {
-        if (error.code === 'ETIMEDOUT') {
-            logger.log('FTP client timed out, starting a new connection')
+        if (error.code === 'ETIMEDOUT' || error.code === 'ERR_NOT_CONNECTED') {
+            logger.log(chalk.red('FTP client timed out, starting a new connection'));
             ftpClient = await ftpService.startFtpClient(submissionParams);
             getRealReports();
         }
         else {
+            console.log(chalk.red(error.code));
             console.log(chalk.red(error.stack));
         }
     }
@@ -119,8 +120,15 @@ stopPolling = () => {
 
         if (!submissionParams.skipFtp && ftpClient) {
             ftpClient.end();
+            delete ftpClient;
         }
     }
+
+    if (ftpClient) {
+        ftpClient.end();
+        delete ftpClient;
+    }
+
 }
 
 module.exports = {
