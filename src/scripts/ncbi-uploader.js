@@ -70,8 +70,10 @@ getRealReports = async () => {
             .map((file) => file.name)
             .sort(collator.compare);
         let reportName = sortedFilenames.slice(-1)[0];
+        let reportNumberStr = (reportName.match('([0-9]+)') || ['-1'])[0];
+        let reportNumber = parseInt(reportNumberStr);
 
-        let shouldPoll = submissionParams.poll === 'all' || highestReportNumber < submissionParams.poll;
+        let shouldPoll = submissionParams.poll === 'all' || reportNumber < submissionParams.poll;
         await downloadReport(reportName, shouldPoll);
     } catch (error) {
         if (error.code === 'ETIMEDOUT' || error.code === 'ERR_NOT_CONNECTED') {
