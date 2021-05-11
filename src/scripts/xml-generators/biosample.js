@@ -4,7 +4,7 @@ const xmlService = require('../../services/xml-service');
 const logger = require('../../services/logger')('a', 'biosample');
 
 module.exports = {
-    generate: (data, values, config, debug = false) => {
+    generate: (data, values, config, submissionParams) => {
         let attributes = [];
         let columnIndices = data.metadata.columnIndices;
         let columnIndexMap = data.metadata.columnIndexMap;
@@ -61,7 +61,7 @@ module.exports = {
                     ...(columnIndexMap['cultivar'] && values[columnIndexMap['cultivar']] && { 'Cultivar': values[columnIndexMap['cultivar']] }),
                 },
                 BioProject: {
-                    PrimaryId: getRowValue(data, values, 'bioproject_accession')
+                    PrimaryId: getRowValue(data, values, 'bioproject_accession') || submissionParams.bioproject
                 },
                 // Name of attribute package used to validate the sample, for example: MIGS.ba.air.4.0. 
                 // See https://www.ncbi.nlm.nih.gov/biosample/docs/packages/ for the full list of available packages.
@@ -83,9 +83,9 @@ module.exports = {
                 + chalk.red.dim('Thank you!')
             , false);
 
-            logger.debug('BioSample Validation Error:', debug);
-            logger.debug(validationObj.validationErrors, debug);
-            logger.debug(validationObj.xml, debug);
+            logger.debug('BioSample Validation Error:', submissionParams.debug);
+            logger.debug(validationObj.validationErrors, submissionParams.debug);
+            logger.debug(validationObj.xml, submissionParams.debug);
         }
 
         return bioSampleXml;

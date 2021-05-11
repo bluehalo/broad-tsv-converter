@@ -11,6 +11,17 @@ getRowValue = (data, values, field) => {
     return colIndex || colIndex === 0 ? values[colIndex] : undefined;
 }
 
+logPercentage = (submissionParams, rowsLength, rowNum) => {
+    // Log current progress, just in case this takes a long time
+    if (!submissionParams.testing) {
+        let dateString = new Date().toLocaleTimeString();
+        let percentageCompleted = Math.floor(rowNum * 100.0 / rowsLength);
+        readline.clearLine(process.stdout, 0);
+        readline.cursorTo(process.stdout, 0, null);
+        process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t${percentageCompleted}%`);
+    }
+}
+
 module.exports = {
     generate: (submissionParams, data, config) => {
         let ret = {
@@ -23,7 +34,7 @@ module.exports = {
             }
         };
 
-        let validationObj = xmlService.validateXml('Submission', ret, true);
+        let validationObj = xmlService.validateXml('Submission', ret, true, submissionParams.debug);
         if (validationObj.isValid) {
             logger.debug('Submission XML is valid', submissionParams.debug);
             return ret;
@@ -37,6 +48,12 @@ module.exports = {
                     + '   2. output xml file\n'
                     + '   3. /logs/debug.log\n'
                 ), false);
+
+                console.log(validationObj.validationErrors)
+
+                logger.debug('Submission Validation Error:', submissionParams.debug);
+                logger.debug(validationObj.validationErrors, submissionParams.debug);
+                logger.debug(validationObj.xml, submissionParams.debug);
             }
 
             if (!submissionParams.force) {
@@ -90,6 +107,7 @@ module.exports = {
     getSelectedActionDataXml: (submissionParams, data, config) => {
         switch (submissionParams.selectedAction) {
             case 'AddData': return module.exports.getAddDataXml(submissionParams, data, config);
+            case 'AddFiles': return module.exports.getAddFilesXml(submissionParams, data, config);
             default: return {};
         }
     },
@@ -97,15 +115,7 @@ module.exports = {
     getAddDataXml: (submissionParams, data, config) => {
         return data.rows.map((d, rowNum) => {
             if (!d) { return; }
-    
-            // Log current progress, just in case this takes a long time
-            if (!submissionParams.testing) {
-                let dateString = new Date().toLocaleTimeString();
-                let percentageCompleted = Math.floor(rowNum * 100.0 / data.rows.length);
-                readline.clearLine(process.stdout, 0);
-                readline.cursorTo(process.stdout, 0, null);
-                process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t${percentageCompleted}%`);
-            }
+            logPercentage(submissionParams, data.rows.length, rowNum);
     
             let values = d
                 .replace('\r', '')
@@ -119,11 +129,11 @@ module.exports = {
                 // '@action_id': 'REPLACEME: token type',
                 // '@submitter_tracking_id': 'REPLACEME: string maxlength 255',
                 AddData: {
-                    '@target_db': 'BioSample',
+                    '@target_db': submissionParams.targetDatabase,
                     Data: {
                         '@content_type': 'XML',
                         XmlContent: {
-                            ...(biosampleGenerator.generate(data, values, config, submissionParams.debug))
+                            ...(biosampleGenerator.generate(data, values, config, submissionParams))
                         }
                     },
                     Identifier: {
@@ -135,6 +145,74 @@ module.exports = {
                 }
             }
     
+            return rowRet;
+        });
+    },
+
+    getAddFilesXml: (submissionParams, data, config) => {
+        return data.rows.map((d, rowNum) => {
+            if (!d) { return; }
+            logPercentage(submissionParams, data.rows.length, rowNum);
+    
+            let values = d
+                .replace('\r', '')
+                .split('\t');
+
+            let attributes = [];
+            let columnIndices = data.metadata.columnIndices;
+            let columnIndexMap = data.metadata.columnIndexMap;
+
+            // These indices are handled separately in the data object
+            let indicesToIgnore = [
+                'bioproject_accession',
+                'biosample_accession',
+                'filename'
+            ];
+
+            values.forEach((val, i) => {
+                let shouldIgnoreAttribute = !columnIndices[i] || indicesToIgnore.indexOf(columnIndices[i]) !== -1;
+    
+                if (val && !shouldIgnoreAttribute) {
+                    attributes.push({
+                        '@name': columnIndices[i],
+                        '#text': val
+                    })    
+                }
+            });
+
+            let rowRet = {
+                AddFiles: {
+                    '@target_db': submissionParams.targetDatabase,
+                    File: {
+                        '@file_path': values[columnIndexMap['filename']],
+                        DataType: {
+                            '#text': 'generic-data'
+                        }
+                    },
+                    Attribute: attributes,
+                    AttributeRefId: [
+                        {
+                            '@name': 'BioProject',
+                            RefId: {
+                                PrimaryId: {
+                                    '@db': 'BioProject',
+                                    '#text': values[columnIndexMap['bioproject_accession']] || submissionParams.bioproject
+                                }
+                            }
+                        },
+                        {
+                            '@name': 'BioSample',
+                            RefId: {
+                                PrimaryId: {
+                                    '@db': 'BioSample',
+                                    '#text': values[columnIndexMap['biosample_accession']]
+                                }
+                            }
+                        }
+                    ]
+                }
+            };
+
             return rowRet;
         });
     }

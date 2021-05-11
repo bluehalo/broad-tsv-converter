@@ -1,8 +1,16 @@
 files/*
 !files/tests
+files/tests/*
+!files/tests/biosample-example.tsv
+!files/tests/sra-example.tsv
+
 logs/
+
 reports/*
-!reports/sample-report.xml
+!reports/tests/
+reports/tests/*
+!reports/tests/sample-report.xml
+
 node_modules/*
 
 package-lock.json

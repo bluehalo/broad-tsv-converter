@@ -38,6 +38,8 @@ help           | -h |            | print help table
 inputFilename  | -i | (required) | filename for the tsv file to be uploaded
 uploadFiles    | -f | (required) | (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload
 outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename
+submissionType |    | (optional) | 'biosample' or 'sra', default is biosample
+bioproject     |    | (optional) | bioproject to use for data if field is not found in the csv
 uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder
 uploaded       |    | (optional) | Boolean, file has already been uploaded; just check on status with the same conditions
 uploadComment  | -c | (optional) | description or comment about this submission
@@ -61,7 +63,8 @@ module.exports = {
         submissionParams = {
             poll: 'all',
             uploaded: false,
-            selectedAction: 'AddData' // AddFiles, ChangeStatus
+            selectedAction: 'AddData', // AddFiles, ChangeStatus
+            targetDatabase: 'BioSample'
         };
 
         module.exports.extractParameters(argv);
@@ -94,6 +97,20 @@ module.exports = {
                 case '--inputfile':
                 case '-i':
                     submissionParams.inputFilename = mapEntry[1];
+                    break;
+                case 'submissiontype':
+                case '--submissiontype':
+                    let type = (mapEntry[1] || '').toLowerCase();
+                    if (type !== 'biosample' && type !== 'sra') {
+                        throw new Error(`Invalid input: submissionType must be 'biosample' or 'sra'`);
+                    }
+                    submissionParams.submissionType = mapEntry[1].toLowerCase();
+                    submissionParams.selectedAction = type === 'sra' ? 'AddFiles' : 'AddData';
+                    submissionParams.targetDatabase = type === 'sra' ? 'SRA' : 'BioSample';
+                    break;
+                case 'bioproject':
+                case '--bioproject':
+                    submissionParams.bioproject = mapEntry[1];
                     break;
                 case 'uploadfiles':
                 case '--uploadfiles':
@@ -158,7 +175,6 @@ module.exports = {
                 case 'runtestmode':
                 case '--runtestmode':
                 case '-t':
-                    submissionParams.skipFtp = true;
                     submissionParams.testing = true;
                     break;
                 case 'debug':

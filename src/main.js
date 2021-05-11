@@ -33,6 +33,7 @@ const fns = {
             readline.clearLine(process.stdout, 0);
             readline.cursorTo(process.stdout, 0, null);
             logger.log(`There was an error: ${error.message}`);
+            logger.debug(error.stack, submissionParams.debug)
         }
     }
 }

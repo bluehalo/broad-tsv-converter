@@ -69,7 +69,7 @@ module.exports = {
                 if (actionStatuses['processed-error'] > 0) {
                     logger.log(chalk.red(`There was a processing error on ${actionStatuses['processed-error']} action(s), please open the report for more details.`));
                     logger.log(chalk.red(reportPath));
-                    // ret.failed = true;
+                    ret.failed = true;
                 }
             }
 
@@ -87,10 +87,12 @@ module.exports = {
 
     writeAttributesTsv: (report, submissionParams, data) => {
         if (!data) {
-            logger.log('Unable to write attributes tsv');
+            logger.log('Unable to write attributes tsv: Missing data');
             return;
         }
-    
+        else {
+            logger.log('Writing attributes file')
+        }
 
         let actions = report.SubmissionStatus.Action;
     

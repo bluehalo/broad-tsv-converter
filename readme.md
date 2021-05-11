@@ -34,6 +34,8 @@ node main.js --uploadFiles=sample.tsv,submission.xml -poll=disabled
 | Parameter      |flag| Required    | Type | Default Value | Description |
 |----------------|----|------------|-------|---|--------------|
 | help           | -h |            |  |   |  print help table |
+| submissionType |    |            | string | BioSample |  'BioSample' or 'SRA' |
+| bioproject     |    |            | string |   |  bioproject reference ID default value if tsv file does not contain a row with this information. 
 | inputFilename  | -i | (required) | string |   |  filename for the tsv file to be uploaded |
 | uploadFiles    | -f | (required) | string |   |  (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload |
 | outputFilename | -o |            | string |   |  filename to write the generated xml file to. Default value will use inputFilename |

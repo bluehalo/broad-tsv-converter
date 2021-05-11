@@ -9,7 +9,6 @@ const ftpService = require('../services/ftp-service');
 const reportProcessor = require('./report-processor');
 
 const { Readable } = require('stream');
-const { report } = require('process');
 
 // FTP variables
 let ftpClient, isPolling;
@@ -35,18 +34,6 @@ poll = async (initial = false) => {
 }
 
 getReports = async () => {
-    submissionParams.skipFtp
-        ? getFakeReports()
-        : getRealReports();
-}
-
-getFakeReports = () => {
-    logger.log('Grabbing fake report for testing purposes');
-    let reportPath = path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-report.xml`);
-    processReport(reportPath);
-}
-
-getRealReports = async () => {
     try {
         let hasSubmissionFile = await ftpClient.exists(`${submissionParams.uploadFolder}/submit.ready`);
 
@@ -193,6 +180,7 @@ module.exports = {
     },
 
     extractTsvFromReport: async (submissionParams_, data_) => {
+        logger.log('Extracting TSV from Report');
         submissionParams = submissionParams_;
         data = data_;
 
