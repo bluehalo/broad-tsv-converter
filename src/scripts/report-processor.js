@@ -3,7 +3,7 @@ const chalk = require('chalk');
 const fs = require('fs');
 const path = require('path');
 
-const parser = require('xml2js');
+const xmlService = require('../services/xml-service');
 const logger = require('../services/logger')('a', 'report-p');
 
 module.exports = {
@@ -17,7 +17,7 @@ module.exports = {
             logger.debug(`Processing report: ${reportPath}`, debug);
             let reportFileContent = fs.readFileSync(reportPath, 'utf8');
 
-            let report = await parser.parseStringPromise(reportFileContent);
+            let report = await xmlService.parseXml(reportFileContent);
             ret.report = report;
     
             let status = report.SubmissionStatus.$.status.toLowerCase();
@@ -69,7 +69,7 @@ module.exports = {
                 if (actionStatuses['processed-error'] > 0) {
                     logger.log(chalk.red(`There was a processing error on ${actionStatuses['processed-error']} action(s), please open the report for more details.`));
                     logger.log(chalk.red(reportPath));
-                    ret.failed = true;
+                    // ret.failed = true;
                 }
             }
 
@@ -91,6 +91,7 @@ module.exports = {
             return;
         }
     
+
         let actions = report.SubmissionStatus.Action;
     
         let stream = fs.createWriteStream(path.resolve(__dirname, `../../reports/${submissionParams.outputFilename}-attributes.tsv`));

@@ -1,4 +1,3 @@
-const config = require('../../config');
 const chalk = require('chalk');
 const readline = require('readline');
 
@@ -13,14 +12,14 @@ getRowValue = (data, values, field) => {
 }
 
 module.exports = {
-    generate: (submissionParams, data) => {
+    generate: (submissionParams, data, config) => {
         let ret = {
             Submission: {
                 '@xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
                 '@xsi:noNamespaceSchemaLocation': 'http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/submit/public-docs/common/submission.xsd',
                 '@schema_version': '2.0',
-                Description: module.exports.getDescriptionXml(submissionParams, data),
-                Action: module.exports.getSelectedActionDataXml(submissionParams, data)
+                Description: module.exports.getDescriptionXml(submissionParams, data, config),
+                Action: module.exports.getSelectedActionDataXml(submissionParams, data, config)
             }
         };
 
@@ -30,13 +29,15 @@ module.exports = {
             return ret;
         }
         else {
-            logger.log(chalk.red(
-                '\nThe submission xml file fails validation. Please check your config\n' 
-                + 'file and try again. If the problem persists, please send us your\n'
-                + '   1. input tsv file\n'
-                + '   2. output xml file\n'
-                + '   3. /logs/debug.log\n'
-            ), false);
+            if (!submissionParams.testing) {
+                logger.log(chalk.red(
+                    '\nThe submission xml file fails validation. Please check your config\n' 
+                    + 'file and try again. If the problem persists, please send us your\n'
+                    + '   1. input tsv file\n'
+                    + '   2. output xml file\n'
+                    + '   3. /logs/debug.log\n'
+                ), false);
+            }
 
             if (!submissionParams.force) {
                 process.exit(1);
@@ -44,7 +45,7 @@ module.exports = {
         }
     },
 
-    getDescriptionXml: (submissionParams, data) => {
+    getDescriptionXml: (submissionParams, data, config) => {
         return {
             ...(submissionParams.comment && { 'Comment': submissionParams.comment }),
             ...(config.submitterConfig && {
@@ -86,23 +87,25 @@ module.exports = {
         };
     },
 
-    getSelectedActionDataXml: (submissionParams, data) => {
+    getSelectedActionDataXml: (submissionParams, data, config) => {
         switch (submissionParams.selectedAction) {
-            case 'AddData': return module.exports.getAddDataXml(submissionParams, data);
+            case 'AddData': return module.exports.getAddDataXml(submissionParams, data, config);
             default: return {};
         }
     },
 
-    getAddDataXml: (submissionParams, data) => {
+    getAddDataXml: (submissionParams, data, config) => {
         return data.rows.map((d, rowNum) => {
             if (!d) { return; }
     
             // Log current progress, just in case this takes a long time
-            let dateString = new Date().toLocaleTimeString();
-            let percentageCompleted = Math.floor(rowNum * 100.0 / data.rows.length);
-            readline.clearLine(process.stdout, 0);
-            readline.cursorTo(process.stdout, 0, null);
-            process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t${percentageCompleted}%`);
+            if (!submissionParams.testing) {
+                let dateString = new Date().toLocaleTimeString();
+                let percentageCompleted = Math.floor(rowNum * 100.0 / data.rows.length);
+                readline.clearLine(process.stdout, 0);
+                readline.cursorTo(process.stdout, 0, null);
+                process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t${percentageCompleted}%`);
+            }
     
             let values = d
                 .replace('\r', '')
@@ -120,7 +123,7 @@ module.exports = {
                     Data: {
                         '@content_type': 'XML',
                         XmlContent: {
-                            ...(biosampleGenerator.generate(data, values, submissionParams.debug))
+                            ...(biosampleGenerator.generate(data, values, config, submissionParams.debug))
                         }
                     },
                     Identifier: {

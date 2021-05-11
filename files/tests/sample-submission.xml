@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<Submission xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.ncbi.nlm.nih.gov/viewvc/v1/trunk/submit/public-docs/common/submission.xsd" schema_version="2.0">
+  <Description>
+    <Comment>this is a fun comment!</Comment>
+    <Organization type="institute">
+      <Name>Gotham Institute</Name>
+      <Contact email="batman@email.com"/>
+    </Organization>
+    <Hold release_date="2017-01-01"/>
+    <SubmissionSoftware version="asymmetrik-tsv@1.0.0"/>
+  </Description>
+  <Action>
+    <AddData target_db="BioSample">
+      <Data content_type="XML">
+        <XmlContent>
+          <BioSample schema_version="2.0">
+            <SampleId>
+              <SPUID spuid_namespace="InstituteNamespace">name1</SPUID>
+            </SampleId>
+            <Descriptor>
+              <Description/>
+            </Descriptor>
+            <Organism>
+              <OrganismName>Severe acute respiratory syndrome coronavirus 2</OrganismName>
+              <IsolateName>SARS-CoV-2/Human/USA/MA-MGH-03863/2020</IsolateName>
+            </Organism>
+            <BioProject>
+              <PrimaryId>project-leona</PrimaryId>
+            </BioProject>
+            <Package>Pathogen.cl</Package>
+            <Attributes>
+              <Attribute attribute_name="isolate">SARS-CoV-2/Human/USA/MA-MGH-03863/2020</Attribute>
+              <Attribute attribute_name="collected_by">Massachusetts General Hospital</Attribute>
+              <Attribute attribute_name="collection_date">5/26/2020</Attribute>
+              <Attribute attribute_name="geo_loc_name">USA: Massachusetts</Attribute>
+              <Attribute attribute_name="isolation_source">Clinical</Attribute>
+              <Attribute attribute_name="lat_lon">missing</Attribute>
+              <Attribute attribute_name="host">Homo sapiens</Attribute>
+              <Attribute attribute_name="host_disease">COVID-19</Attribute>
+              <Attribute attribute_name="host_subject_id">MA-MGH-03863</Attribute>
+              <Attribute attribute_name="anatomical_part">Nasopharynx (NP)</Attribute>
+              <Attribute attribute_name="body_product">Mucus</Attribute>
+              <Attribute attribute_name="purpose_of_sampling">Diagnostic Testing</Attribute>
+              <Attribute attribute_name="purpose_of_sequencing">Longitudinal surveillance (repeat sampling)</Attribute>
+            </Attributes>
+          </BioSample>
+        </XmlContent>
+      </Data>
+      <Identifier>
+        <SPUID spuid_namespace="InstituteNamespace">name1</SPUID>
+      </Identifier>
+    </AddData>
+  </Action>
+  <Action>
+    <AddData target_db="BioSample">
+      <Data content_type="XML">
+        <XmlContent>
+          <BioSample schema_version="2.0">
+            <SampleId>
+              <SPUID spuid_namespace="InstituteNamespace">name2</SPUID>
+            </SampleId>
+            <Descriptor>
+              <Description/>
+            </Descriptor>
+            <Organism>
+              <OrganismName>Severe acute respiratory syndrome coronavirus 2</OrganismName>
+              <IsolateName>SARS-CoV-2/Human/USA/MA-MGH-03864/2020</IsolateName>
+            </Organism>
+            <BioProject>
+              <PrimaryId>project-leona</PrimaryId>
+            </BioProject>
+            <Package>Pathogen.cl</Package>
+            <Attributes>
+              <Attribute attribute_name="isolate">SARS-CoV-2/Human/USA/MA-MGH-03864/2020</Attribute>
+              <Attribute attribute_name="collected_by">Massachusetts General Hospital</Attribute>
+              <Attribute attribute_name="collection_date">6/28/2020</Attribute>
+              <Attribute attribute_name="geo_loc_name">USA: Massachusetts</Attribute>
+              <Attribute attribute_name="isolation_source">Clinical</Attribute>
+              <Attribute attribute_name="lat_lon">missing</Attribute>
+              <Attribute attribute_name="host">Homo sapiens</Attribute>
+              <Attribute attribute_name="host_disease">COVID-19</Attribute>
+              <Attribute attribute_name="host_subject_id">MA-MGH-03864</Attribute>
+              <Attribute attribute_name="anatomical_part">Nasopharynx (NP)</Attribute>
+              <Attribute attribute_name="body_product">Mucus</Attribute>
+              <Attribute attribute_name="purpose_of_sampling">Diagnostic Testing</Attribute>
+              <Attribute attribute_name="purpose_of_sequencing">Longitudinal surveillance (repeat sampling)</Attribute>
+            </Attributes>
+          </BioSample>
+        </XmlContent>
+      </Data>
+      <Identifier>
+        <SPUID spuid_namespace="InstituteNamespace">name2</SPUID>
+      </Identifier>
+    </AddData>
+  </Action>
+  <Action>
+    <AddData target_db="BioSample">
+      <Data content_type="XML">
+        <XmlContent>
+          <BioSample schema_version="2.0">
+            <SampleId>
+              <SPUID spuid_namespace="InstituteNamespace">name3</SPUID>
+            </SampleId>
+            <Descriptor>
+              <Description/>
+            </Descriptor>
+            <Organism>
+              <OrganismName>Severe acute respiratory syndrome coronavirus 2</OrganismName>
+              <IsolateName>SARS-CoV-2/Human/USA/MA-MGH-03865/2020</IsolateName>
+            </Organism>
+            <BioProject>
+              <PrimaryId>project-leona</PrimaryId>
+            </BioProject>
+            <Package>Pathogen.cl</Package>
+            <Attributes>
+              <Attribute attribute_name="isolate">SARS-CoV-2/Human/USA/MA-MGH-03865/2020</Attribute>
+              <Attribute attribute_name="collected_by">Massachusetts General Hospital</Attribute>
+              <Attribute attribute_name="collection_date">5/26/2020</Attribute>
+              <Attribute attribute_name="geo_loc_name">USA: Massachusetts</Attribute>
+              <Attribute attribute_name="isolation_source">Clinical</Attribute>
+              <Attribute attribute_name="lat_lon">missing</Attribute>
+              <Attribute attribute_name="host">Homo sapiens</Attribute>
+              <Attribute attribute_name="host_disease">COVID-19</Attribute>
+              <Attribute attribute_name="host_subject_id">MA-MGH-03865</Attribute>
+              <Attribute attribute_name="anatomical_part">Nasopharynx (NP)</Attribute>
+              <Attribute attribute_name="body_product">Mucus</Attribute>
+              <Attribute attribute_name="purpose_of_sampling">Diagnostic Testing</Attribute>
+              <Attribute attribute_name="purpose_of_sequencing">Longitudinal surveillance (repeat sampling)</Attribute>
+            </Attributes>
+          </BioSample>
+        </XmlContent>
+      </Data>
+      <Identifier>
+        <SPUID spuid_namespace="InstituteNamespace">name3</SPUID>
+      </Identifier>
+    </AddData>
+  </Action>
+</Submission>

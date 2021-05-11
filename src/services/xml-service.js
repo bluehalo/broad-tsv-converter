@@ -3,10 +3,15 @@ const path = require('path');
 
 const builder = require('xmlbuilder');
 const libxmljs = require('libxmljs');
+const parser = require('xml2js');
 
 const logger = require('./logger')('a', 'xml-service');
 
 module.exports = {
+    parseXml: async (xmlString) => {
+        return await parser.parseStringPromise(xmlString);
+    },
+
     buildXml: (xmlString) => {
         return builder
             .create(xmlString)

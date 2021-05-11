@@ -1,11 +1,10 @@
-const config = require('../../config');
 const chalk = require('chalk');
 
 const xmlService = require('../../services/xml-service');
 const logger = require('../../services/logger')('a', 'biosample');
 
 module.exports = {
-    generate: (data, values, debug = false) => {
+    generate: (data, values, config, debug = false) => {
         let attributes = [];
         let columnIndices = data.metadata.columnIndices;
         let columnIndexMap = data.metadata.columnIndexMap;

@@ -1,3 +1,4 @@
+const config = require('../config');
 const chalk = require('chalk');
 const fs = require('fs');
 const path = require('path');
@@ -41,10 +42,12 @@ writeXml = async (submissionParams, xmlString) => {
             let xml = xmlService.buildXml(xmlString);
 
             fs.writeFile(submissionParams.outputFilepath, xml.toString(), () => {
-                readline.clearLine(process.stdout, 0);
-                readline.cursorTo(process.stdout, 0, null);
-                let dateString = new Date().toLocaleTimeString();
-                process.stdout.write(` ${dateString}\t| tsv->xml | \tFinished Processing {${submissionParams.inputFilename}.tsv}\n`);
+                if (!submissionParams.testing) {
+                    readline.clearLine(process.stdout, 0);
+                    readline.cursorTo(process.stdout, 0, null);
+                    let dateString = new Date().toLocaleTimeString();
+                    process.stdout.write(` ${dateString}\t| tsv->xml | \tFinished Processing {${submissionParams.inputFilename}.tsv}\n`);
+                }
                 resolve(true);
             });
         } catch (e) {
@@ -55,13 +58,15 @@ writeXml = async (submissionParams, xmlString) => {
 
 module.exports = {
     process: async (submissionParams) => {
-        readline.cursorTo(process.stdout, 0, null);
-        let dateString = `${new Date().toLocaleTimeString()}`;
-        process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t0%`);
+        if (!submissionParams.testing) {
+            readline.cursorTo(process.stdout, 0, null);
+            let dateString = `${new Date().toLocaleTimeString()}`;
+            process.stdout.write(` ${dateString}\t| tsv->xml | \tProcessing {${submissionParams.inputFilename}.tsv}\t0%`);
+        }
         logger.debug('in tsv-to-xml.js : starting to process file', submissionParams.debug);
 
         let data = extractData(submissionParams);
-        let xmlString = submissionGenerator.generate(submissionParams, data);
+        let xmlString = submissionGenerator.generate(submissionParams, data, config);
         await writeXml(submissionParams, xmlString);
 
         return data;
