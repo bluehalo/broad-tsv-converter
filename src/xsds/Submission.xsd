@@ -403,7 +403,7 @@
       </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="cloud_id" type="xs:string" use="optional">
+    <xs:attribute name="cloud_url" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation>
         FileTrack cloud file id - unique id for file in the cloud, which metadata is stored in FileTrack.

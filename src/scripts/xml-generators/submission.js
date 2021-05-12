@@ -190,7 +190,7 @@ module.exports = {
                 AddFiles: {
                     '@target_db': submissionParams.targetDatabase,
                     File: {
-                        '@cloud_id': getFilePath(submissionParams, values[columnIndexMap['filename']]),
+                        '@cloud_url': getFilePath(submissionParams, values[columnIndexMap['filename']]),
                         DataType: {
                             '#text': submissionParams.submissionFileDataType
                         }
