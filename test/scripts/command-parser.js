@@ -151,7 +151,7 @@ describe('Command Line Parsing', function() {
 
         describe(`extracts 'poll`, () => {
             it(`should select 'all' by default`, () => {
-                command = ['i=sample.tsv'];
+                command = ['i=biosample-example.tsv'];
                 actualParams = cmdParser.extractRequestVariables(command);
                 assert.equal(actualParams.poll, 'all');
             });
@@ -211,20 +211,6 @@ describe('Command Line Parsing', function() {
             command = ['--force'];
             actualParams = cmdParser.extractRequestVariables(command);
             assert(actualParams.force);
-        });
-
-        it('should set up test mode', () => {
-            command = ['runtestmode'];
-            actualParams = cmdParser.extractRequestVariables(command);
-            assert(actualParams.skipFtp);
-
-            command = ['--runtestmode'];
-            actualParams = cmdParser.extractRequestVariables(command);
-            assert(actualParams.skipFtp);
-
-            command = ['-t'];
-            actualParams = cmdParser.extractRequestVariables(command);
-            assert(actualParams.skipFtp);            
         });
     });
 

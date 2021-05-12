@@ -25,7 +25,7 @@ generateXml = async (conf, commands) => {
 describe('TSV to XML', function() {
     it('Should generate submission xml', async () => {
         commands = [
-            '-i=tests/sample.tsv',
+            '-i=tests/biosample-example.tsv',
             '--force', '--runTestMode'
         ];
         try {
@@ -37,7 +37,7 @@ describe('TSV to XML', function() {
 
     describe('Config Changes', () => {
         it('should successfully parse minimum required config', async () => {
-            commands = [ '-i=tests/sample.tsv', '--force', '--runTestMode' ];
+            commands = [ '-i=tests/biosample-example.tsv', '--force', '--runTestMode' ];
             let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
             let xmlDesc = xml.Submission.Description[0];
             let xmlAction = xml.Submission.Action;
@@ -77,7 +77,7 @@ describe('TSV to XML', function() {
                     }
                 }
             };
-            commands = [ '-i=tests/sample.tsv', '--force', '--runTestMode' ];
+            commands = [ '-i=tests/biosample-example.tsv', '--force', '--runTestMode' ];
             let xml = await generateXml(config, commands);
             let xmlOrg = xml.Submission.Description[0].Organization[0];
             
@@ -112,7 +112,7 @@ describe('TSV to XML', function() {
                     }
                 }
             };
-            commands = [ '-i=tests/sample.tsv', '--force', '--runTestMode' ];
+            commands = [ '-i=tests/biosample-example.tsv', '--force', '--runTestMode' ];
             let xml = await generateXml(config, commands);
             let xmlSubmitter = xml.Submission.Description[0].Submitter[0];
 
@@ -124,7 +124,7 @@ describe('TSV to XML', function() {
     describe('Command Line Parameters', () => {
         it('Should append command line properties (releaseDate, comments)', async () => {
             commands = [
-                '-i=tests/sample.tsv',
+                '-i=tests/biosample-example.tsv',
                 '-c=this is a fun comment!',
                 '--releasedate=2017-01-01',
                 '--force', '--runTestMode'
@@ -154,7 +154,7 @@ describe('TSV to XML', function() {
             };
 
             commands = [
-                '-i=tests/sample.tsv',
+                '-i=tests/biosample-example.tsv',
                 '-c=this is a fun comment!',
                 '--releasedate=2017-01-01',
                 '--force', '--runTestMode'
@@ -171,7 +171,7 @@ describe('TSV to XML', function() {
     describe('Processing File Data', () => {
         it('Should properly render AddData fields per row of the tsv file', async () => {
             commands = [
-                '-i=tests/sample.tsv',
+                '-i=tests/biosample-example.tsv',
                 '-c=this is a fun comment!',
                 '--releasedate=2017-01-01',
                 '--force', '--runTestMode'

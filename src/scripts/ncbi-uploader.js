@@ -66,7 +66,7 @@ getReports = async () => {
         if (error.code === 'ETIMEDOUT' || error.code === 'ERR_NOT_CONNECTED') {
             logger.log(chalk.red('FTP client timed out, starting a new connection'));
             ftpClient = await ftpService.startFtpClient(submissionParams);
-            getRealReports();
+            getReports();
         }
         else {
             console.log(chalk.red(error.code));
