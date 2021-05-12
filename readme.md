@@ -35,6 +35,8 @@ node main.js --uploadFiles=sample.tsv,submission.xml -poll=disabled
 |----------------|----|------------|-------|---|--------------|
 | help           | -h |            |  |   |  print help table |
 | submissionType |    |            | string | BioSample |  'BioSample' or 'SRA' |
+| submissionDataType |  |          | 'autodetect-xml', 'generic-data' , 'phenotype-table' , ... (to see full list, run without specifying value) , default is 'generic-data' | generic-data | If uploading a file, what type of content does the file contain
+| submissionFileLoc  |    |        | string |   |  if a filename column exists in the tsv file, prepend this string to the filename provided (for indicating folder or path or source of file, ex: 'gs://example_paper_sra/')
 | bioproject     |    |            | string |   |  bioproject reference ID default value if tsv file does not contain a row with this information. 
 | inputFilename  | -i | (required) | string |   |  filename for the tsv file to be uploaded |
 | uploadFiles    | -f | (required) | string |   |  (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload |

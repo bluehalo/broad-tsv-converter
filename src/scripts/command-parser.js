@@ -33,22 +33,24 @@ Before running the script, you will need to do the following steps:
   ${chalk.bold.cyanBright(`How to Use`)}
 --------------------------------------------------
 ${chalk.underline(
-'Parameter      |    |            | Description        ')}
-help           | -h |            | print help table
-inputFilename  | -i | (required) | filename for the tsv file to be uploaded
-uploadFiles    | -f | (required) | (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload
-outputFilename | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename
-submissionType |    | (optional) | 'biosample' or 'sra', default is biosample
-bioproject     |    | (optional) | bioproject to use for data if field is not found in the csv
-uploadFolder   | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder
-uploaded       |    | (optional) | Boolean, file has already been uploaded; just check on status with the same conditions
-uploadComment  | -c | (optional) | description or comment about this submission
-poll           |    | (optional) | '(number)' | 'all' | 'disabled' - Default value is 'all'. Poll until either this report number is hit or poll until all requests have been completed
-processReport  | -p | (optional) | filename for report to convert to tsv - If upload folder is included, it will be downloaded from the FTP, otherwise, the script will look in the local files
-releaseDate    | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01'
-runTestMode    | -t |            | Run the test mode (skip FTP steps, and run with sample responses)
-debug          |    |            | Turn on verbose details
-force          |    |            | Force upload / processing, even if validation fails
+'Parameter          |    |            | Description        ')}
+help               | -h |            | print help table
+inputFilename      | -i | (required) | filename for the tsv file to be uploaded
+uploadFiles        | -f | (required) | (Either input filename or uploadFiles is required, but not both) comma separated list of files to upload
+outputFilename     | -o | (optional) | filename to write the generated xml file to. Default value will use inputFilename
+submissionType     |    | (optional) | 'biosample' or 'sra', default is biosample
+submissionDataType |    | (optional) | 'autodetect-xml' | 'generic-data' | 'phenotype-table' | ... (to see full list, run without specifying value) , default is 'generic-data'
+submissionFileLoc  |    | (optional) | if a filename column exists in the tsv file, prepend this string to the filename provided (for indicating folder or path or source of file, ex: 'gs://example_paper_sra/')
+bioproject         |    | (optional) | bioproject to use for data if field is not found in the csv
+uploadFolder       | -u | (optional) | if provided, the generated xml file will be uploaded through ftp to the specified folder
+uploaded           |    | (optional) | Boolean, file has already been uploaded; just check on status with the same conditions
+uploadComment      | -c | (optional) | description or comment about this submission
+poll               |    | (optional) | '(number)' | 'all' | 'disabled' - Default value is 'all'. Poll until either this report number is hit or poll until all requests have been completed
+processReport      | -p | (optional) | filename for report to convert to tsv - If upload folder is included, it will be downloaded from the FTP, otherwise, the script will look in the local files
+releaseDate        | -d | (optional) | All data in this submission is requested to be publicly released on or after this date; example: '2017-01-01'
+runTestMode        | -t |            | Run the test mode (skip FTP steps, and run with sample responses)
+debug              |    |            | Turn on verbose details
+force              |    |            | Force upload / processing, even if validation fails
 --------------------------------------------------
 
 Example:
@@ -58,13 +60,16 @@ node main.js -i=sample.tsv --runTestMode --debug --force
 --------------------------------------------------
 `;
 
+const submissionFileDataTypeOptions = ['autodetect-xml', 'generic-data', 'phenotype-table', 'sra-study-xml-v1', 'sra-experiment-xml-v1', 'sra-sample-xml-v1', 'sra-run-xml-v1', 'sra-analysis-xml-v1', 'sra-study-xml-v2', 'sra-experiment-xml-v2', 'sra-sample-xml-v2', 'sra-run-xml-v2', 'sra-analysis-xml-v2', 'sra-run-454_native', 'sra-run-bam', 'sra-run-CompleteGenomics_native', 'sra-run-fastq', 'sra-run-Helicos_native', 'sra-run-PacBio_HDF5', 'sra-run-sff', 'sra-run-SOLiD_native', 'sra-run-srf', 'project-core-xml-v1', 'wgs-contigs-sqn', 'wgs-unplaced-scaffolds-agp', 'wgs-contig-replicon-descr', 'wgs-agp-replicon-descr', 'wgs-loc-chr-to-replicon', 'wgs-replicon-from-contigs-agp', 'wgs-scaffold-from-contigs-agp', 'wgs-replicon-from-scaffolds-agp', 'wgs-unlocalized-scaffolds-agp', 'wgs-unloc-scaffold-to-replicon', 'wgs-assembly-sqn', 'wgs-assembly-fasta', 'wgs-contigs-fasta', 'wgs-agp', 'wgs-placement', 'ena-wgs-flatfile', 'ddbj-wgs-flatfile', 'wgs-flatfile-preprocess-report', 'tsa-seqsubmit-sqn', 'complete-genomes-annotated-sqn', 'complete-genomes-annotate-sqn', 'complete-genomes-annotate-fasta', 'complete-genomes-annotate-template', 'complete-genomes-replicon', 'genbank-sqn', 'genbank-submission-package', 'genbank-barcode-tar', 'genbank-sequences-fasta', 'genbank-srcmods-tbl', 'genbank-ncbi-link-tbl', 'genbank-sequences-filtered-fasta', 'genbank-sequences-fastaval-xml', 'genbank-srcmods-filtered-tbl', 'genbank-sequences-report-txt', 'genbank-sequences-report-tbl', 'genbank-tools-versions-xml', 'genbank-features-table', 'genbank-features-filtered-table', 'methylation-data', 'sequences-fasta', 'bionano-cmap', 'bionano-coord', 'bionano-xmap', 'bionano-smap', 'bionano-bnx', 'sequin', 'antibiogram', 'modifications.csv', 'modifications.gff', 'motifs.gff', 'motif_summary.csv', 'biosample-tbl-v2.0', 'antibiogram-tbl-v1.0'];
+
 module.exports = {
     extractRequestVariables: (argv) => {
         submissionParams = {
             poll: 'all',
             uploaded: false,
             selectedAction: 'AddData', // AddFiles, ChangeStatus
-            targetDatabase: 'BioSample'
+            targetDatabase: 'BioSample',
+            submissionFileDataType: 'generic-data'
         };
 
         module.exports.extractParameters(argv);
@@ -107,6 +112,23 @@ module.exports = {
                     submissionParams.submissionType = mapEntry[1].toLowerCase();
                     submissionParams.selectedAction = type === 'sra' ? 'AddFiles' : 'AddData';
                     submissionParams.targetDatabase = type === 'sra' ? 'SRA' : 'BioSample';
+                    break;
+                case 'submissiondatatype':
+                case '--submissiondatatype':
+                    let dataType = (mapEntry[1] || '').toLowerCase();
+                    if (submissionFileDataTypeOptions.indexOf(dataType) === -1) {
+                        logger.log(`Submission File Data Type Options:\n${submissionFileDataTypeOptions.join(',\n')}`);
+                        throw new Error(`Invalid input: submissionFileData must be an approved value`);
+                    }
+                    submissionParams.submissionFileDataType = dataType;
+                    break;
+                case 'submissionfileloc':
+                case '--submissionfileloc':
+                    let fileLoc = mapEntry[1];
+                    if (fileLoc[fileLoc.length - 1] !== '/') {
+                        fileLoc += '/';
+                    }
+                    submissionParams.submissionFileLocation = fileLoc;
                     break;
                 case 'bioproject':
                 case '--bioproject':

@@ -11,6 +11,14 @@ getRowValue = (data, values, field) => {
     return colIndex || colIndex === 0 ? values[colIndex] : undefined;
 }
 
+getFilePath = (submissionParams, value) => {
+    let fileLocation = submissionParams.submissionFileLocation || '';
+    if (value[0] === '/') {
+        value.slice(1);
+    }
+    return `${fileLocation}${value}`;
+}
+
 logPercentage = (submissionParams, rowsLength, rowNum) => {
     // Log current progress, just in case this takes a long time
     if (!submissionParams.testing) {
@@ -48,8 +56,6 @@ module.exports = {
                     + '   2. output xml file\n'
                     + '   3. /logs/debug.log\n'
                 ), false);
-
-                console.log(validationObj.validationErrors)
 
                 logger.debug('Submission Validation Error:', submissionParams.debug);
                 logger.debug(validationObj.validationErrors, submissionParams.debug);
@@ -184,9 +190,9 @@ module.exports = {
                 AddFiles: {
                     '@target_db': submissionParams.targetDatabase,
                     File: {
-                        '@file_path': values[columnIndexMap['filename']],
+                        '@cloud_id': getFilePath(submissionParams, values[columnIndexMap['filename']]),
                         DataType: {
-                            '#text': 'generic-data'
+                            '#text': submissionParams.submissionFileDataType
                         }
                     },
                     Attribute: attributes,
