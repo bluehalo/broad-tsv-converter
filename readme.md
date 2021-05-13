@@ -63,7 +63,7 @@ Going through the flow:
   Example Usages
 --------------------------------------------------
 - Generate a biosample submission:
-  - Generate a sample-submission.xml file from sample.tsv
+  - Generate a sample-submission.xml file from biosample-example.tsv
   - Upload to ftp:/path/to/folder/submission.xml
   - Poll until submission processing has been completed
   - `node main.js -i=sample.tsv --uploadFolder=ftp:/path/to/folder`
@@ -72,7 +72,12 @@ Going through the flow:
   - content.zip and submission.xml should be locally at ./files
   - Poll until report.1.xml is generated
   - `node main.js --uploadFiles=content.zip,submission.xml --uploadFolder=ftp:/path/to/folder -poll=1`
+- Generate an SRA submission:
+  - Generate a sample-submission.xml file from sra-example.tsv
+  - `node src/main.js -i=tests/sra-example.tsv --submissionType=sra --bioproject=PRJNA535086 --submissionFileLoc=gs://sdf -uploadFolder=/submit/Test/sra-test`
 - Generate a tsv file from a report.xml file
   - convert report.5.xml file into report-attributes.tsv 
   - report.5.xml should be located in ./reports
   - `node main.js --inputFilename=sample.tsv --processReport=report.5.xml`
+
+
