@@ -3,6 +3,7 @@ files/*
 files/tests/*
 !files/tests/biosample-example.tsv
 !files/tests/sra-example.tsv
+!files/tests/sra-multifile-example.tsv
 
 logs/
 

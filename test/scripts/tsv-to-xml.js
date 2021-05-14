@@ -169,61 +169,185 @@ describe('TSV to XML', function() {
     });
 
     describe('Processing File Data', () => {
-        it('Should properly render AddData fields per row of the tsv file', async () => {
-            commands = [
-                '-i=tests/biosample-example.tsv',
-                '-c=this is a fun comment!',
-                '--releasedate=2017-01-01',
-                '--force', '--runTestMode'
-            ];
-            let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
-            let xmlActions = xml.Submission.Action;
-            let action;
+        describe('BioSample File Tests', () => {
+            it('Should properly render AddData fields per row of the tsv file', async () => {
+                commands = [
+                    '-i=tests/biosample-example.tsv',
+                    '-c=this is a fun comment!',
+                    '--releasedate=2017-01-01',
+                    '--force', '--runTestMode'
+                ];
+                let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
+                let xmlActions = xml.Submission.Action;
+                let action;
 
-            assert.equal(xmlActions.length, 3);
+                assert.equal(xmlActions.length, 3);
+                
+                // First action
+                action = xmlActions[0];
+                assert.equal(action.AddData[0].$.target_db, 'BioSample');
+                assert.equal(action.AddData[0].Identifier[0].SPUID[0]._, 'name1');
+                assert.equal(action.AddData[0].Identifier[0].SPUID[0].$.spuid_namespace, 'InstituteNamespace');
+                assert.equal(action.AddData[0].Data[0].$.content_type, 'XML');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].$.schema_version, '2.0');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].SampleId[0].SPUID[0]._, 'name1');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].SampleId[0].SPUID[0].$.spuid_namespace, 'InstituteNamespace');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Descriptor[0].Description[0], '');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Organism[0].OrganismName[0], 'Severe acute respiratory syndrome coronavirus 2');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Organism[0].IsolateName[0], 'SARS-CoV-2/Human/USA/MA-MGH-03863/2020');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].BioProject[0].PrimaryId[0], 'project-leona');
+                assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Package[0], 'Pathogen.cl');
+
+                let attributes = action.AddData[0].Data[0].XmlContent[0].BioSample[0].Attributes[0].Attribute;
+                assert.equal(attributes[0].$.attribute_name, 'isolate');
+                assert.equal(attributes[0]._, 'SARS-CoV-2/Human/USA/MA-MGH-03863/2020');
+                assert.equal(attributes[1].$.attribute_name, 'collected_by');
+                assert.equal(attributes[1]._, 'Massachusetts General Hospital');
+                assert.equal(attributes[2].$.attribute_name, 'collection_date');
+                assert.equal(attributes[2]._, '5/26/2020');
+                assert.equal(attributes[3].$.attribute_name, 'geo_loc_name');
+                assert.equal(attributes[3]._, 'USA: Massachusetts');
+                assert.equal(attributes[4].$.attribute_name, 'isolation_source');
+                assert.equal(attributes[4]._, 'Clinical');
+                assert.equal(attributes[5].$.attribute_name, 'lat_lon');
+                assert.equal(attributes[5]._, 'missing');
+                assert.equal(attributes[6].$.attribute_name, 'host');
+                assert.equal(attributes[6]._, 'Homo sapiens');
+                assert.equal(attributes[7].$.attribute_name, 'host_disease');
+                assert.equal(attributes[7]._, 'COVID-19');
+                assert.equal(attributes[8].$.attribute_name, 'host_subject_id');
+                assert.equal(attributes[8]._, 'MA-MGH-03863');
+                assert.equal(attributes[9].$.attribute_name, 'anatomical_part');
+                assert.equal(attributes[9]._, 'Nasopharynx (NP)');
+                assert.equal(attributes[10].$.attribute_name, 'body_product');
+                assert.equal(attributes[10]._, 'Mucus');
+                assert.equal(attributes[11].$.attribute_name, 'purpose_of_sampling');
+                assert.equal(attributes[11]._, 'Diagnostic Testing');
+                assert.equal(attributes[12].$.attribute_name, 'purpose_of_sequencing');
+                assert.equal(attributes[12]._, 'Longitudinal surveillance (repeat sampling)');
+            });
+        });
+
+        describe('SRA File Tests', () => {
+            it('should be able to process SRA files', async () => {
+                commands = [
+                    '-i=tests/sra-example.tsv',
+                    '-c=this is a fun comment!',
+                    '--releasedate=2017-01-01',
+                    '--submissionType=sra',
+                    '--bioproject=fakebioproject',
+                    'submissionFileLoc=gs://',
+                    '--force', '--runTestMode'
+                ];
+                let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
+                let xmlActions = xml.Submission.Action;
+                let action = xmlActions[0];
+    
+                assert.equal(action.AddFiles[0].$.target_db, 'SRA');
+                assert.equal(action.AddFiles[0].Identifier[0].SPUID[0]._, 'USA-CT-CDCBI-CRSP_KHN4JH3NU426HHDE-2021.l21R-118CR0484_000001321513');
+                assert.equal(action.AddFiles[0].Identifier[0].SPUID[0].$.spuid_namespace, 'InstituteNamespace');
+    
+                assert.equal(action.AddFiles[0].AttributeRefId.length, 2);
+                assert.equal(action.AddFiles[0].AttributeRefId[0].$.name, 'BioProject');
+                assert.equal(action.AddFiles[0].AttributeRefId[0].RefId[0].PrimaryId[0].$.db, 'BioProject');
+                assert.equal(action.AddFiles[0].AttributeRefId[0].RefId[0].PrimaryId[0]._, 'fakebioproject');
+                assert.equal(action.AddFiles[0].AttributeRefId[1].$.name, 'BioSample');
+                assert.equal(action.AddFiles[0].AttributeRefId[1].RefId[0].PrimaryId[0].$.db, 'BioSample');
+                assert.equal(action.AddFiles[0].AttributeRefId[1].RefId[0].PrimaryId[0]._, 'SAMN19077089');
+            });
+    
+            it('should be able to process SRA tsv with single filename attribute', async () => {
+                commands = [
+                    '-i=tests/sra-example.tsv',
+                    '-c=this is a fun comment!',
+                    '--releasedate=2017-01-01',
+                    '--submissionType=sra',
+                    '--bioproject=fakebioproject',
+                    '--force', '--runTestMode'
+                ];
+                let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
+                let xmlActions = xml.Submission.Action;
+                let action = xmlActions[0];             
+
+                assert.equal(action.AddFiles[0].File.length, 1);
+                assert.equal(action.AddFiles[0].File[0].$.cloud_url, 'USA-CT-CDCBI-CRSP_KHN4JH3NU426HHDE-2021.l21R-118CR0484_000001321513.HC2GYDRXY.1.cleaned.bam')
+                assert.equal(action.AddFiles[0].File[0].DataType[0], 'generic-data')
+            });
+
+            it('should be able to process SRA tsv with multiple filename attributes', async () => {
+                commands = [
+                    '-i=tests/sra-multifile-example.tsv',
+                    '-c=this is a fun comment!',
+                    '--releasedate=2017-01-01',
+                    '--submissionType=sra',
+                    '--bioproject=fakebioproject',
+                    '--force', '--runTestMode'
+                ];
+                let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
+                let xmlActions = xml.Submission.Action;
+                let action = xmlActions[0];             
+
+                assert.equal(action.AddFiles[0].File.length, 4);
+                assert.equal(action.AddFiles[0].File[0].$.cloud_url, 'USA-MA-Broad_CRSP-00810-2021.l000013221203_H8.HMTLKAFX2.1.cleaned.bam')
+                assert.equal(action.AddFiles[0].File[0].DataType[0], 'generic-data')
+
+                assert.equal(action.AddFiles[0].File[1].$.cloud_url, 'USA-MA-Broad_CRSP-00810-2021.l000013221203_H8.HMTLKAFX2.2.cleaned.bam')
+                assert.equal(action.AddFiles[0].File[2].$.cloud_url, 'USA-MA-Broad_CRSP-00810-2021.l000013221203_H8.HMTLKAFX2.3.cleaned.bam')
+                assert.equal(action.AddFiles[0].File[3].$.cloud_url, 'USA-MA-Broad_CRSP-00810-2021.l000013221203_H8.HMTLKAFX2.4.cleaned.bam')
+            });
+
             
-            // First action
-            action = xmlActions[0];
-            assert.equal(action.AddData[0].$.target_db, 'BioSample');
-            assert.equal(action.AddData[0].Identifier[0].SPUID[0]._, 'name1');
-            assert.equal(action.AddData[0].Identifier[0].SPUID[0].$.spuid_namespace, 'InstituteNamespace');
-            assert.equal(action.AddData[0].Data[0].$.content_type, 'XML');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].$.schema_version, '2.0');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].SampleId[0].SPUID[0]._, 'name1');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].SampleId[0].SPUID[0].$.spuid_namespace, 'InstituteNamespace');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Descriptor[0].Description[0], '');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Organism[0].OrganismName[0], 'Severe acute respiratory syndrome coronavirus 2');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Organism[0].IsolateName[0], 'SARS-CoV-2/Human/USA/MA-MGH-03863/2020');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].BioProject[0].PrimaryId[0], 'project-leona');
-            assert.equal(action.AddData[0].Data[0].XmlContent[0].BioSample[0].Package[0], 'Pathogen.cl');
+            it('submissionFileLoc: should prepend the submission file location', async () => {
+                commands = [
+                    '-i=tests/sra-example.tsv',
+                    '-c=this is a fun comment!',
+                    '--releasedate=2017-01-01',
+                    '--submissionType=sra',
+                    '--bioproject=fakebioproject',
+                    'submissionFileLoc=gs://',
+                    '--force', '--runTestMode'
+                ];
+                let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
+                let xmlActions = xml.Submission.Action;
+                let action = xmlActions[0];             
 
-            let attributes = action.AddData[0].Data[0].XmlContent[0].BioSample[0].Attributes[0].Attribute;
-            assert.equal(attributes[0].$.attribute_name, 'isolate');
-            assert.equal(attributes[0]._, 'SARS-CoV-2/Human/USA/MA-MGH-03863/2020');
-            assert.equal(attributes[1].$.attribute_name, 'collected_by');
-            assert.equal(attributes[1]._, 'Massachusetts General Hospital');
-            assert.equal(attributes[2].$.attribute_name, 'collection_date');
-            assert.equal(attributes[2]._, '5/26/2020');
-            assert.equal(attributes[3].$.attribute_name, 'geo_loc_name');
-            assert.equal(attributes[3]._, 'USA: Massachusetts');
-            assert.equal(attributes[4].$.attribute_name, 'isolation_source');
-            assert.equal(attributes[4]._, 'Clinical');
-            assert.equal(attributes[5].$.attribute_name, 'lat_lon');
-            assert.equal(attributes[5]._, 'missing');
-            assert.equal(attributes[6].$.attribute_name, 'host');
-            assert.equal(attributes[6]._, 'Homo sapiens');
-            assert.equal(attributes[7].$.attribute_name, 'host_disease');
-            assert.equal(attributes[7]._, 'COVID-19');
-            assert.equal(attributes[8].$.attribute_name, 'host_subject_id');
-            assert.equal(attributes[8]._, 'MA-MGH-03863');
-            assert.equal(attributes[9].$.attribute_name, 'anatomical_part');
-            assert.equal(attributes[9]._, 'Nasopharynx (NP)');
-            assert.equal(attributes[10].$.attribute_name, 'body_product');
-            assert.equal(attributes[10]._, 'Mucus');
-            assert.equal(attributes[11].$.attribute_name, 'purpose_of_sampling');
-            assert.equal(attributes[11]._, 'Diagnostic Testing');
-            assert.equal(attributes[12].$.attribute_name, 'purpose_of_sequencing');
-            assert.equal(attributes[12]._, 'Longitudinal surveillance (repeat sampling)');
+                assert.equal(action.AddFiles[0].File[0].$.cloud_url, 'gs://USA-CT-CDCBI-CRSP_KHN4JH3NU426HHDE-2021.l21R-118CR0484_000001321513.HC2GYDRXY.1.cleaned.bam')
+            });
+
+            it('submissionFileLoc: should add separating slash between fileloc and filename if it doesnt exist', async () => {
+                commands = [
+                    '-i=tests/sra-example.tsv',
+                    '-c=this is a fun comment!',
+                    '--releasedate=2017-01-01',
+                    '--submissionType=sra',
+                    '--bioproject=fakebioproject',
+                    'submissionFileLoc=gs',
+                    '--force', '--runTestMode'
+                ];
+                let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
+                let xmlActions = xml.Submission.Action;
+                let action = xmlActions[0];             
+
+                assert.equal(action.AddFiles[0].File[0].$.cloud_url, 'gs/USA-CT-CDCBI-CRSP_KHN4JH3NU426HHDE-2021.l21R-118CR0484_000001321513.HC2GYDRXY.1.cleaned.bam')
+            });
+
+            it('submissionFileLoc: should render /filename and filename the same', async () => {
+                commands = [
+                    '-i=tests/sra-multifile-example.tsv',
+                    '-c=this is a fun comment!',
+                    '--releasedate=2017-01-01',
+                    '--submissionType=sra',
+                    '--bioproject=fakebioproject',
+                    'submissionFileLoc=boom',
+                    '--force', '--runTestMode'
+                ];
+                let xml = await generateXml(testHelpers.MINIMAL_CONFIG, commands);
+                let xmlActions = xml.Submission.Action;
+                let action = xmlActions[0];
+
+                assert.equal(action.AddFiles[0].File[0].$.cloud_url, 'boom/USA-MA-Broad_CRSP-00810-2021.l000013221203_H8.HMTLKAFX2.1.cleaned.bam');
+                assert.equal(action.AddFiles[0].File[3].$.cloud_url, 'boom/USA-MA-Broad_CRSP-00810-2021.l000013221203_H8.HMTLKAFX2.4.cleaned.bam');
+            });
         });
     });
 });

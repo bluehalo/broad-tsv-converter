@@ -14,7 +14,7 @@ getRowValue = (data, values, field) => {
 getFilePath = (submissionParams, value) => {
     let fileLocation = submissionParams.submissionFileLocation || '';
     if (value[0] === '/') {
-        value.slice(1);
+        value = value.slice(1);
     }
     return `${fileLocation}${value}`;
 }
@@ -165,20 +165,29 @@ module.exports = {
                 .split('\t');
 
             let attributes = [];
+            let files = [];
             let columnIndices = data.metadata.columnIndices;
             let columnIndexMap = data.metadata.columnIndexMap;
 
             // These indices are handled separately in the data object
             let indicesToIgnore = [
                 'bioproject_accession',
-                'biosample_accession',
-                'filename'
+                'biosample_accession'
             ];
 
             values.forEach((val, i) => {
                 let shouldIgnoreAttribute = !columnIndices[i] || indicesToIgnore.indexOf(columnIndices[i]) !== -1;
+                let isFileAttribute = columnIndices[i] && columnIndices[i].match('filename[0-9]*?');
     
-                if (val && !shouldIgnoreAttribute) {
+                if (val && isFileAttribute) {
+                    files.push({
+                        '@cloud_url': getFilePath(submissionParams, val),
+                        DataType: {
+                            '#text': submissionParams.submissionFileDataType
+                        }
+                    });
+                }
+                else if (val && !shouldIgnoreAttribute) {
                     attributes.push({
                         '@name': columnIndices[i],
                         '#text': val
@@ -189,12 +198,7 @@ module.exports = {
             let rowRet = {
                 AddFiles: {
                     '@target_db': submissionParams.targetDatabase,
-                    File: {
-                        '@cloud_url': getFilePath(submissionParams, values[columnIndexMap['filename']]),
-                        DataType: {
-                            '#text': submissionParams.submissionFileDataType
-                        }
-                    },
+                    File: files,
                     Attribute: attributes,
                     AttributeRefId: [
                         {
