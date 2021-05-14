@@ -219,7 +219,7 @@ module.exports = {
                     Identifier: {
                         SPUID: {
                             '@spuid_namespace': config.organizationConfig.spuid_namespace,
-                            '#text': config.organizationConfig.spuid
+                            '#text': getRowValue(data, values, 'library_ID')
                         }
                     }
                 }
